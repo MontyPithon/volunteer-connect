@@ -6,6 +6,7 @@ import VolunteerHistory from './components/VolunteerHistory';
 import LoginPage from './components/Login';
 import RegisterPage from './components/Register';
 import ProfileForm from './components/profileForm';
+import EventManagementPage from './components/EventManagementPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
             <li><Link to="/profile" style={styles.link}>Profile</Link></li>
             <li><Link to="/VolunteerMatchingForm" style={styles.link}>Matching Form</Link></li>
             <li><Link to="/VolunteerHistory" style={styles.link}>Volunteer History</Link></li>
+            <li><Link to="/events" style={styles.link}>Event Management</Link></li>
           </ul>
         </nav>
 
@@ -29,6 +31,7 @@ function App() {
           <Route path="/profile" element={<ProfileForm />} />
           <Route path="/VolunteerMatchingForm" element={<VolunteerMatchingForm />} />
           <Route path="/VolunteerHistory" element={<VolunteerHistory />} />
+          <Route path="/events" element={<EventManagementPage />} />
         </Routes>
         </div>
       </div>
