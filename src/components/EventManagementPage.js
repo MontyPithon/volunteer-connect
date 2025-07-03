@@ -39,9 +39,61 @@ const EventManagementPage = () => {
     setEvents(sampleEvents);
   }, []);
 
-  return (
+return (
     <div>
-      <h1>Event Management Page</h1>
+      {/* Header */}
+      <div>
+        <div>
+          <h1>Event Management</h1>
+          <p>Create and manage volunteer events</p>
+        </div>
+        <div>
+          {/* Create button */}
+        </div>
+      </div>
+
+      {/* Events Table */}
+      <div>
+        {events.length === 0 ? (
+          <div>
+            <h3>No events found</h3>
+          </div>
+        ) : (
+          <table>
+            <thead>
+              <tr>
+                <th>Event Details</th>
+                <th>Location</th>
+                <th>Urgency</th>
+                <th>Date</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {events.map((event) => (
+                <tr key={event.id}>
+                  <td>
+                    <div>{event.name}</div>
+                    <div>{event.description}</div>
+                  </td>
+                  <td>
+                    <div>{event.location}</div>
+                  </td>
+                  <td>
+                    <span>
+                      {event.urgency}
+                    </span>
+                  </td>
+                  <td>{event.eventDate}</td>
+                  <td>
+                    {/* Edit and delete buttons*/}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
     </div>
   );
 };
