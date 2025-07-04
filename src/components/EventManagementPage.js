@@ -103,17 +103,23 @@ const EventManagementPage = () => {
     };
 
     return (
-        <div className='event-management-page bg-gray-100 min-h-screen max-w-4xl mx-auto p-4'>
+        <div className='event-management-page bg-gray-50 min-h-screen'>
             {/* Header */}
-            <div className='header flex justify-between items-center max-w-4xl mx-auto p-4 border-b mb-4 border-gray-300'>
-                <div>
-                    <h1 className='text-lg font-bold'>Event Management</h1>
-                    <p className='text-sm'>Create and manage volunteer events</p>
-                </div>
-                <div>
-                    <button className='bg-blue-500 text-white px-4 py-2 rounded' onClick={() => setShowForm(true)}>Create New Event</button>
+            <div className="bg-gray-50 py-8 px-4">
+                <div className="max-w-4xl mx-auto text-center">
+                    <h2 className="text-3xl font-bold text-gray-900">
+                        Event Management
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                        Create and manage volunteer events
+                    </p>
                 </div>
             </div>
+            
+            <div className='max-w-4xl mx-auto px-4'>
+                <div className='flex justify-center mb-4'>
+                    <button className='bg-blue-500 text-white px-4 py-2 rounded' onClick={() => setShowForm(true)}>Create New Event</button>
+                </div>
 
             {/* Event Form */}
             {showForm && (
@@ -254,6 +260,7 @@ const EventManagementPage = () => {
                         </tbody>
                     </table>
                 )}
+            </div>
             </div>
         </div>
     );
