@@ -104,58 +104,229 @@ export default function ProfileForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} style={{ maxWidth: '600px', margin: 'auto' }}>
-      <h2>Complete Your Profile</h2>
+    <div className="min-h-screen flex items-start justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-2xl w-full space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h2 className="mt-2 text-3xl font-bold text-gray-900">
+            Complete Your Profile
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Tell us about yourself to help match you with volunteer opportunities
+          </p>
+        </div>
 
-      <input type="text" placeholder="Full Name" required maxLength={50}
-        value={formData.fullName} onChange={(e) => handleChange('fullName', e.target.value)} />
+        {/* Profile Form Card */}
+        <div className="bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Personal Information Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                Personal Information
+              </h3>
+              
+              <div>
+                <label htmlFor="fullName" className="block text-sm font-medium text-gray-700 mb-2">
+                  Full Name *
+                </label>
+                <input 
+                  id="fullName"
+                  type="text" 
+                  placeholder="Enter your full name" 
+                  required 
+                  maxLength={50}
+                  value={formData.fullName} 
+                  onChange={(e) => handleChange('fullName', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+            </div>
 
-      <input type="text" placeholder="Address 1" required maxLength={100}
-        value={formData.address1} onChange={(e) => handleChange('address1', e.target.value)} />
+            {/* Address Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                Address Information
+              </h3>
+              
+              <div>
+                <label htmlFor="address1" className="block text-sm font-medium text-gray-700 mb-2">
+                  Address 1 *
+                </label>
+                <input 
+                  id="address1"
+                  type="text" 
+                  placeholder="Enter your street address" 
+                  required 
+                  maxLength={100}
+                  value={formData.address1} 
+                  onChange={(e) => handleChange('address1', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
 
-      <input type="text" placeholder="Address 2" maxLength={100}
-        value={formData.address2} onChange={(e) => handleChange('address2', e.target.value)} />
+              <div>
+                <label htmlFor="address2" className="block text-sm font-medium text-gray-700 mb-2">
+                  Address 2
+                </label>
+                <input 
+                  id="address2"
+                  type="text" 
+                  placeholder="Apartment, suite, etc. (optional)" 
+                  maxLength={100}
+                  value={formData.address2} 
+                  onChange={(e) => handleChange('address2', e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
 
-      <input type="text" placeholder="City" required maxLength={100}
-        value={formData.city} onChange={(e) => handleChange('city', e.target.value)} />
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="city" className="block text-sm font-medium text-gray-700 mb-2">
+                    City *
+                  </label>
+                  <input 
+                    id="city"
+                    type="text" 
+                    placeholder="Enter city" 
+                    required 
+                    maxLength={100}
+                    value={formData.city} 
+                    onChange={(e) => handleChange('city', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
 
-      <select required value={formData.state} onChange={(e) => handleChange('state', e.target.value)}>
-        <option value="">Select a state</option>
-        {stateOptions.map(state => (
-          <option key={state.value} value={state.value}>{state.label}</option>
-        ))}
-      </select>
+                <div>
+                  <label htmlFor="state" className="block text-sm font-medium text-gray-700 mb-2">
+                    State *
+                  </label>
+                  <select 
+                    id="state"
+                    required 
+                    value={formData.state} 
+                    onChange={(e) => handleChange('state', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  >
+                    <option value="">Select a state</option>
+                    {stateOptions.map(state => (
+                      <option key={state.value} value={state.value}>{state.label}</option>
+                    ))}
+                  </select>
+                </div>
 
-      <input type="text" placeholder="Zip Code" required pattern="\d{5,9}" maxLength={9}
-        value={formData.zip} onChange={(e) => handleChange('zip', e.target.value)} />
+                <div>
+                  <label htmlFor="zip" className="block text-sm font-medium text-gray-700 mb-2">
+                    Zip Code *
+                  </label>
+                  <input 
+                    id="zip"
+                    type="text" 
+                    placeholder="Enter zip code" 
+                    required 
+                    pattern="\d{5,9}" 
+                    maxLength={9}
+                    value={formData.zip} 
+                    onChange={(e) => handleChange('zip', e.target.value)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  />
+                </div>
+              </div>
+            </div>
 
-      <label>Skills:</label>
-      <Select
-        options={skillsOptions}
-        isMulti
-        onChange={(selected) => handleChange('skills', selected)}
-      />
+            {/* Skills Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                Skills & Preferences
+              </h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Skills *
+                </label>
+                <Select
+                  options={skillsOptions}
+                  isMulti
+                  onChange={(selected) => handleChange('skills', selected)}
+                  className="text-sm"
+                  placeholder="Select your skills..."
+                  styles={{
+                    control: (provided) => ({
+                      ...provided,
+                      borderColor: '#d1d5db',
+                      '&:hover': {
+                        borderColor: '#3b82f6'
+                      },
+                      '&:focus-within': {
+                        borderColor: '#3b82f6',
+                        boxShadow: '0 0 0 2px rgba(59, 130, 246, 0.1)'
+                      }
+                    })
+                  }}
+                />
+              </div>
 
-      <label>Preferences:</label>
-      <textarea
-        value={formData.preferences}
-        onChange={(e) => handleChange('preferences', e.target.value)}
-      />
+              <div>
+                <label htmlFor="preferences" className="block text-sm font-medium text-gray-700 mb-2">
+                  Preferences
+                </label>
+                <textarea
+                  id="preferences"
+                  value={formData.preferences}
+                  onChange={(e) => handleChange('preferences', e.target.value)}
+                  placeholder="Tell us about your preferences, interests, or any special considerations..."
+                  rows={4}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors resize-none"
+                />
+              </div>
+            </div>
 
-      <label>Availability Dates:</label>
-      <DatePicker
-        selected={null}
-        onChange={handleDateChange}
-        placeholderText="Click to add a date"
-      />
-      <div>
-        {availabilityDates.map((d, i) => (
-          <span key={i}>{d.toDateString()} | </span>
-        ))}
+            {/* Availability Section */}
+            <div className="space-y-4">
+              <h3 className="text-lg font-medium text-gray-900 border-b border-gray-200 pb-2">
+                Availability
+              </h3>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Available Dates *
+                </label>
+                <DatePicker
+                  selected={null}
+                  onChange={handleDateChange}
+                  placeholderText="Click to add a date"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                />
+              </div>
+
+              {availabilityDates.length > 0 && (
+                <div className="bg-gray-50 border border-gray-200 rounded-md p-3">
+                  <p className="text-sm font-medium text-gray-700 mb-2">Selected Dates:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {availabilityDates.map((d, i) => (
+                      <span 
+                        key={i} 
+                        className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800"
+                      >
+                        {d.toDateString()}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Submit Button */}
+            <div className="pt-4">
+              <button 
+                type="submit"
+                className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              >
+                Submit Profile
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
-
-      <br />
-      <button type="submit">Submit Profile</button>
-    </form>
+    </div>
   );
 }
