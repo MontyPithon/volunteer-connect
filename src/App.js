@@ -6,6 +6,7 @@ import VolunteerHistory from './components/VolunteerHistory';
 import LoginPage from './components/Login';
 import RegisterPage from './components/Register';
 import ProfileForm from './components/profileForm';
+import EventManagement from './components/EventManagement';
 
 function App() {
   return (
@@ -42,6 +43,14 @@ function App() {
                 </li>
                 <li>
                   <Link 
+                    to="/event-management" 
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
+                  >
+                    Event Management
+                  </Link>
+                </li>
+                <li>
+                  <Link 
                     to="/VolunteerMatchingForm" 
                     className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
                   >
@@ -66,6 +75,7 @@ function App() {
             <Route path="/" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/profile" element={<ProfileForm />} />
+            <Route path="/event-management" element={<EventManagement />} />
             <Route path="/VolunteerMatchingForm" element={<VolunteerMatchingForm />} />
             <Route path="/VolunteerHistory" element={<VolunteerHistory />} />
           </Routes>
