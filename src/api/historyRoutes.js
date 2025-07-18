@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 
-const volunteerHistory = require('../data/history');
+const volunteerHistory = require('../components/history');
 
 // GET /api/history/:id
 router.get('/:id', (req, res) => {
