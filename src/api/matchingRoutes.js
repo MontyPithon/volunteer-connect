@@ -1,8 +1,8 @@
 const express = require('express');
 const router = express.Router();
 
-const events = require('../data/events');
-const volunteers = require('../data/volunteers');
+const events = require('./data/events');
+const volunteers = require('./data/volunteers');
 
 // Matching logic function
 function matchVolunteerToEvents(volunteer, events) {
