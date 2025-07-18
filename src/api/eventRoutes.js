@@ -39,6 +39,46 @@ router.get('/:id', (req, res) => {
     });
 });
 
+// Create a new event
+router.post('/', (req, res) => {
+  if (!req.body.name || !req.body.description || !req.body.location ||
+      !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
+      !req.body.urgency || !req.body.eventDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
+  
+  if (req.body.name.length > 100) {
+      return res.status(400).json({ message: 'Event name must be 100 characters or less' });
+  }
+  
+  const newEvent = {
+      ...req.body,
+      id: Date.now().toString()
+  };
+  
+  res.status(201).json(newEvent);
+});
+
+// Update an existing event
+router.put('/:id', (req, res) => {
+  if (!req.body.name || !req.body.description || !req.body.location ||
+      !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
+      !req.body.urgency || !req.body.eventDate) {
+      return res.status(400).json({ message: 'Missing required fields' });
+  }
+  
+  const updatedEvent = {
+      ...req.body,
+      id: req.params.id
+  };
+  
+  res.json(updatedEvent);
+});
+
+// Delete an existing event
+router.delete('/:id', (req, res) => {
+  res.json({ message: 'Event deleted', id: req.params.id });
+});
 
 
 

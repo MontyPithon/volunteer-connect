@@ -1,7 +1,11 @@
-import React, { use, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+
+const API_BASE_URL = 'http://localhost:5000/api/events';
 
 const EventManagementPage = () => {
     const [events, setEvents] = useState([]);
+    const [loading, setLoading] = useState(true);
     const [showForm, setShowForm] = useState(false);
     const [editingEvent, setEditingEvent] = useState(null);
     const [formData, setFormData] = useState({
@@ -16,28 +20,21 @@ const EventManagementPage = () => {
     const availableSkills = ['Cooking', 'Teaching', 'Cleaning', 'Gardening', 'Organizing', 'Communication'];
 
     useEffect(() => {
-        const sampleEvents = [
-            {
-                id: '1',
-                name: 'Community Cleanup',
-                description: 'A day of cleaning up the local park.',
-                location: 'Central Park, 45th St',
-                requiredSkills: ['Cleaning'],
-                urgency: 'High',
-                eventDate: '07-12-2025'
-            },
-            {
-                id: '2',
-                name: 'Food Drive',
-                description: 'Collecting food items for the local food bank.',
-                location: 'Community Center, 123 Main St',
-                requiredSkills: ['Organizing', 'Communication'],
-                urgency: 'Medium',
-                eventDate: '07-01-2025'
-            }
-        ];
-        setEvents(sampleEvents);
+        fetchEvents();
     }, []);
+
+    const fetchEvents = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(API_BASE_URL);
+            setEvents(response.data.events);
+        } catch (error) {
+            console.error('Error fetching events:', error);
+            alert('Failed to fetch events');
+        } finally {
+            setLoading(false);
+        }
+    };
     const resetForm = () => {
         setFormData({
             id: '',
@@ -70,7 +67,7 @@ const EventManagementPage = () => {
     };
 
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Validation
@@ -85,21 +82,36 @@ const EventManagementPage = () => {
             return;
         }
 
-        if (editingEvent) {
-            // Update event
-            setEvents(prev => prev.map(event =>
-                event.id === editingEvent.id ? { ...formData, id: editingEvent.id } : event
-            ));
-        } else {
-            // Create new event
-            const newEvent = {
-                ...formData,
-                id: Date.now().toString()
-            };
-            setEvents(prev => [...prev, newEvent]);
+        try {
+            if (editingEvent) {
+                // Update event
+                const response = await axios.put(`${API_BASE_URL}/${editingEvent.id}`, formData);
+                setEvents(prev => prev.map(event =>
+                    event.id === editingEvent.id ? response.data : event
+                ));
+            } else {
+                // Create new event
+                const response = await axios.post(API_BASE_URL, formData);
+                setEvents(prev => [...prev, response.data]);
+            }
+            resetForm();
+        } catch (error) {
+            console.error('Error saving event:', error);
+            alert('Failed to save event');
         }
+    };
 
-        resetForm();
+    const handleDelete = async (eventId) => {
+        if (window.confirm('Are you sure you want to delete this event?')) {
+            try {
+                await axios.delete(`${API_BASE_URL}/${eventId}`);
+                setEvents(prev => prev.filter(e => e.id !== eventId));
+                resetForm();
+            } catch (error) {
+                console.error('Error deleting event:', error);
+                alert('Failed to delete event');
+            }
+        }
     };
 
     return (
@@ -209,7 +221,11 @@ const EventManagementPage = () => {
             )}
             {/* Events Table */}
             <div className='events-table bg-white p-6 rounded shadow-md'>
-                {events.length === 0 ? (
+                {loading ? (
+                    <div className='text-center py-4'>
+                        <p>Loading events...</p>
+                    </div>
+                ) : events.length === 0 ? (
                     <div>
                         <h3>No events found</h3>
                     </div>
@@ -250,10 +266,7 @@ const EventManagementPage = () => {
                                             setFormData(event);
                                             setShowForm(true);
                                         }}>Edit</button>
-                                        <button className=' text-red-500 px-2 py-1 rounded transition duration-200 hover:bg-red-500 hover:text-white' onClick={() => {
-                                            setEvents(prev => prev.filter(e => e.id !== event.id));
-                                            resetForm();
-                                        }}>Delete</button>
+                                        <button className=' text-red-500 px-2 py-1 rounded transition duration-200 hover:bg-red-500 hover:text-white' onClick={() => handleDelete(event.id)}>Delete</button>
                                     </td>
                                 </tr>
                             ))}
