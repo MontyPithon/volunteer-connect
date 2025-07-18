@@ -1,4 +1,4 @@
-export const volunteerHistory = {
+const volunteerHistory = {
   1: [
     {
       name: "Food Drive April",
@@ -54,3 +54,4 @@ export const volunteerHistory = {
     }
   ]
 };
+module.exports = volunteerHistory;
