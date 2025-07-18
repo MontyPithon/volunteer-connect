@@ -27,3 +27,5 @@ const events = [
     date: '2025-07-08',
   },
 ];
+
+module.exports = events;
