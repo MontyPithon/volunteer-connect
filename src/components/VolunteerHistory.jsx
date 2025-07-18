@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { volunteers } from './volunteers';
-import { volunteerHistory } from './history';
+import volunteerHistory from './history';
 
 const VolunteerHistory = () => {
   const [selectedId, setSelectedId] = useState('');
