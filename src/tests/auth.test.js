@@ -1,6 +1,6 @@
 const request = require('supertest');
-const app = require('../server');
-const users = require('../users');
+const app = require('../../server');
+const users = require('../api/users');
 
 beforeEach(() => users.length = 0); 
 
