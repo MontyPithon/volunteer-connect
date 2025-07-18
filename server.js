@@ -11,11 +11,13 @@ app.use(express.json());
 const eventRoutes = require('./src/api/eventRoutes');
 const matchingRoutes = require('./src/api/matchingRoutes');
 const historyRoutes = require('./src/api/historyRoutes');
+const profileRoutes = require('./src/api/profileRoutes');
 
 // Use routes
 app.use('/api/events', eventRoutes);
 app.use('/api/match', matchingRoutes);
 app.use('/api/history', historyRoutes);
+app.use('/api/profiles', profileRoutes);
 
 // Simple test route
 app.get('/api/test', (req, res) => {
