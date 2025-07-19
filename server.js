@@ -13,6 +13,7 @@ const matchingRoutes = require('./src/api/matchingRoutes');
 const historyRoutes = require('./src/api/historyRoutes');
 const profileRoutes = require('./src/api/profileRoutes');
 const authRoutes = require('./src/api/authRoutes');
+const notificationRoutes = require('./src/api/notificationRoutes');
 
 // Use routes
 app.use('/api/events', eventRoutes);
@@ -20,6 +21,7 @@ app.use('/api/match', matchingRoutes);
 app.use('/api/history', historyRoutes);
 app.use('/api/profiles', profileRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/notifications', notificationRoutes);
 
 // Simple test route
 app.get('/api/test', (req, res) => {
