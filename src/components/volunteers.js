@@ -1,4 +1,4 @@
-export const volunteers = [
+const volunteers = [
   {
     id: 1,
     fullName: "Alice Johnson",

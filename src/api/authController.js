@@ -1,5 +1,5 @@
-const users = require('../users');
-const { validateRegistration, validateLogin } = require('../validations/authValidation');
+const users = require('./users');
+const { validateRegistration, validateLogin } = require('./authValidation');
 
 exports.register = (req, res) => {
   const { error } = validateRegistration(req.body);

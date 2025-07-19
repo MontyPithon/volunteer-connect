@@ -1,27 +1,33 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
-    console.log('Logging in with:', { email, password });
-    alert('Login submitted (no real backend yet- Stored locally)');
 
-    const storedUser = JSON.parse(localStorage.getItem('mockUser'));
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
 
-    if (storedUser && storedUser.email === email && storedUser.password === password) {
-      alert('Login successful!');
-      navigate('/profile');
-    } else {
+      const data = await response.json();
+      alert(data.message);
+
+      if (response.ok) navigate('/profile');
+    } catch (err) {
+      console.error(err);
       alert('Invalid credentials. Try again.');
     }
   };
 
-  return (
+return (
     <div className="min-h-screen flex items-start justify-center bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6">
         {/* Header */}

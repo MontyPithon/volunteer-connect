@@ -1,19 +1,30 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+
 
 export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const navigate = useNavigate();
 
-  const handleRegister = (e) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    
-        localStorage.setItem('mockUser', JSON.stringify({ email, password }));
-        
-    console.log('Registering user:', { email, password });
-    alert('Registration submitted (no real backend yet - stored locally)');
-    navigate('/login');
+
+    try {
+      const response = await fetch('http://localhost:5000/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+
+      const data = await response.json();
+      alert(data.message);
+
+      if (response.ok) navigate('/');
+    } catch (err) {
+      console.error(err);
+      alert('Registration failed.');
+    }
   };
 
   return (
