@@ -1,36 +1,41 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 
-// NotificationSystem component to display notifications
-// Display notifications for new event assignments, updates, and reminders
+const API_BASE_URL = 'http://localhost:5000/api/notifications';
+const USER_ID = '1';
+
 const NotificationSystem = () => {
     const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const sampleNotifications = [
-            { 
-                id: 1, 
-                type: 'event', 
-                message: 'You have been assigned to a new event: Beach Cleanup on July 15.', 
-                date: '2025-07-01' 
-            },
-            { 
-                id: 2, 
-                type: 'update', 
-                message: 'The event schedule for July has been updated. Please check your profile for details.', 
-                date: '2025-07-02' 
-            },
-            { 
-                id: 3, 
-                type: 'reminder', 
-                message: 'Your next volunteering event is on July 20.', 
-                date: '2025-07-10' 
-            }
-        ];
-        setNotifications(sampleNotifications);
+        fetchNotifications();
     }, []);
-    const closeNotification = (id) => {
-        setNotifications(notifications.filter(notification => notification.id !== id));
+
+    const fetchNotifications = async () => {
+        try {
+            setLoading(true);
+            const response = await axios.get(`${API_BASE_URL}/${USER_ID}`);
+            setNotifications(response.data);
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+            setError(error.message);
+        } finally {
+            setLoading(false);
+        }
     };
+
+    const closeNotification = async (id) => {
+        try {
+            await axios.delete(`${API_BASE_URL}/${USER_ID}/${id}`);
+            setNotifications(notifications.filter(notification => notification.id !== id));
+        } catch (error) {
+            console.error('Error marking notification as read:', error);
+            setError(error.message);
+        }
+    };
+
     return (
         <div className='notification-system bg-gray-50 min-h-screen'>
             {/* Header */}
