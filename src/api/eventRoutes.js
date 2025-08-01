@@ -1,29 +1,47 @@
 const express = require('express');
 const router = express.Router();
 
+const db = require('../../db');
+
+
 // Get all events
-router.get('/', (req, res) => {
-  // fetch events from database
-  res.json({ events: [
-    {
-        id: '1',
-        name: 'Community Cleanup',
-        description: 'A day of cleaning up the local park.',
-        location: 'Central Park, 45th St',
-        requiredSkills: ['Cleaning'],
-        urgency: 'High',
-        eventDate: '07-12-2025'
-    },
-    {
-        id: '2',
-        name: 'Food Drive',
-        description: 'Collecting food items for the local food bank.',
-        location: 'Community Center, 123 Main St',
-        requiredSkills: ['Organizing', 'Communication'],
-        urgency: 'Medium',
-        eventDate: '07-01-2025'
-    }
-  ]});
+router.get('/', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT
+        e.event_id,
+        e.event_name,
+        e.description,
+        e.location,
+        e.urgency,
+        e.event_date,
+        COALESCE(
+          (
+            SELECT array_agg(s.skill_name)
+            FROM EventRequiredSkills ers
+            JOIN Skills s ON s.skill_id = ers.skill_id
+            WHERE ers.event_id = e.event_id
+          ), '{}'
+        ) AS required_skills
+      FROM EventDetails e
+      ORDER BY e.event_date;
+    `);
+    
+    const events = result.rows.map(event => ({
+      id: event.event_id,
+      name: event.event_name,
+      description: event.description,
+      location: event.location,
+      requiredSkills: event.required_skills,
+      urgency: event.urgency,
+      eventDate: event.event_date
+    }));
+    
+    res.json({ events });
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ message: 'Error fetching events' });
+  }
 });
 
 // Get a specific event
