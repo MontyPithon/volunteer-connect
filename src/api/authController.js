@@ -1,27 +1,98 @@
-const users = require('./users');
-const { validateRegistration, validateLogin } = require('./authValidation');
+const bcrypt = require('bcrypt');
+const Joi = require('joi');
+const { UserCredentials } = require('../models');
 
-exports.register = (req, res) => {
-  const { error } = validateRegistration(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
+// Validation schemas
+const registerSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().min(6).required()
+});
 
-  const { email, password } = req.body;
+const loginSchema = Joi.object({
+  email: Joi.string().email().required(),
+  password: Joi.string().required()
+});
 
-  const exists = users.find(u => u.email === email);
-  if (exists) return res.status(409).json({ error: 'User already exists' });
+/**
+ * Register new user
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.register = async (req, res) => {
+  try {
+    // Validate request data
+    const { error, value } = registerSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-  users.push({ email, password });
-  res.status(201).json({ message: 'User registered successfully' });
+    const { email, password } = value;
+
+    // Check if user already exists
+    const existingUser = await UserCredentials.findOne({ 
+      where: { email } 
+    });
+
+    if (existingUser) {
+      return res.status(409).json({ error: 'User with this email already exists' });
+    }
+
+    // Hash password
+    const saltRounds = 10;
+    const passwordHash = await bcrypt.hash(password, saltRounds);
+
+    // Create new user
+    const newUser = await UserCredentials.create({
+      email,
+      password_hash: passwordHash
+    });
+
+    res.status(201).json({ 
+      message: 'User registered successfully', 
+      userId: newUser.id 
+    });
+  } catch (error) {
+    console.error('Error registering user:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
-exports.login = (req, res) => {
-  const { error } = validateLogin(req.body);
-  if (error) return res.status(400).json({ error: error.details[0].message });
+/**
+ * Login user
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.login = async (req, res) => {
+  try {
+    // Validate request data
+    const { error, value } = loginSchema.validate(req.body);
+    if (error) {
+      return res.status(400).json({ error: error.details[0].message });
+    }
 
-  const { email, password } = req.body;
-  const user = users.find(u => u.email === email && u.password === password);
+    const { email, password } = value;
 
-  if (!user) return res.status(401).json({ error: 'Invalid credentials' });
+    // Get user from database
+    const user = await UserCredentials.findOne({ 
+      where: { email } 
+    });
 
-  res.status(200).json({ message: 'Login successful' });
+    if (!user) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    // Verify password
+    const isValidPassword = await bcrypt.compare(password, user.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid email or password' });
+    }
+
+    res.json({ 
+      message: 'Login successful', 
+      userId: user.id 
+    });
+  } catch (error) {
+    console.error('Error during login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
