@@ -6,8 +6,9 @@ const db = require('../../db');
 
 // Get all events
 router.get('/', async (req, res) => {
+  const client = await db.connect();
   try {
-    const result = await db.query(`
+    const result = await client.query(`
       SELECT
         e.event_id,
         e.event_name,
@@ -41,13 +42,16 @@ router.get('/', async (req, res) => {
   } catch (error) {
     console.error('Error fetching events:', error);
     res.status(500).json({ message: 'Error fetching events' });
+  } finally {
+    client.release();
   }
 });
 
 // Get all available skills
 router.get('/skills', async (req, res) => {
+  const client = await db.connect();
   try {
-    const result = await db.query(`
+    const result = await client.query(`
       SELECT skill_id, skill_name
       FROM Skills
       ORDER BY skill_name ASC
@@ -57,13 +61,16 @@ router.get('/skills', async (req, res) => {
   } catch (error) {
     console.error('Error fetching skills:', error);
     res.status(500).json({ message: 'Error fetching skills' });
+  } finally {
+    client.release();
   }
 });
 
 // Get a specific event
 router.get('/:id', async (req, res) => {
+  const client = await db.connect();
   try {
-    const result = await db.query(`
+    const result = await client.query(`
       SELECT
         e.event_id,
         e.event_name,
@@ -98,11 +105,13 @@ router.get('/:id', async (req, res) => {
   } catch (error) {
     console.error('Error fetching event:', error);
     res.status(500).json({ message: 'Error fetching event' + req.params.id });
+  } finally {
+    client.release();
   }
 });
 
 // Create a new event
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
@@ -112,35 +121,121 @@ router.post('/', (req, res) => {
   if (req.body.name.length > 100) {
       return res.status(400).json({ message: 'Event name must be 100 characters or less' });
   }
-  
-  const newEvent = {
-      ...req.body,
-      id: Date.now().toString()
-  };
-  
-  res.status(201).json(newEvent);
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const eventResult = await client.query(
+      `INSERT INTO EventDetails (event_name, description, location, urgency, event_date)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING event_id`,
+      [
+        req.body.name,
+        req.body.description,
+        req.body.location,
+        req.body.urgency,
+        req.body.eventDate
+      ]
+    );
+    const eventId = eventResult.rows[0].event_id;
+    for (const skillName of req.body.requiredSkills) {
+      // Look up skill_id by name
+      const skillResult = await client.query(
+        'SELECT skill_id FROM Skills WHERE skill_name = $1',
+        [skillName]
+      );
+      if (skillResult.rows.length === 0) {
+        throw new Error(`Skill not found: ${skillName}`);
+      }
+      const skillId = skillResult.rows[0].skill_id;
+      await client.query(
+        'INSERT INTO EventRequiredSkills (event_id, skill_id) VALUES ($1, $2)',
+        [eventId, skillId]
+      );
+    }
+    await client.query('COMMIT');
+    res.status(201).json({
+      id: eventId,
+      name: req.body.name,
+      description: req.body.description,
+      location: req.body.location,
+      requiredSkills: req.body.requiredSkills,
+      urgency: req.body.urgency,
+      eventDate: req.body.eventDate
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating event:', error);
+    res.status(500).json({ message: 'Error creating event' });
+  } finally {
+    client.release();
+  }
 });
 
 // Update an existing event
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
   }
-  
-  const updatedEvent = {
-      ...req.body,
-      id: req.params.id
-  };
-  
-  res.json(updatedEvent);
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE EventDetails
+       SET event_name = $1, description = $2, location = $3, urgency = $4, event_date = $5
+       WHERE event_id = $6`,
+      [
+        req.body.name,
+        req.body.description,
+        req.body.location,
+        req.body.urgency,
+        req.body.eventDate,
+        req.params.id
+      ]
+    );
+    await client.query(
+      `DELETE FROM EventRequiredSkills WHERE event_id = $1`,
+      [req.params.id]
+    );
+    for (const skillName of req.body.requiredSkills) {
+      // Look up skill_id by name
+      const skillResult = await client.query(
+        'SELECT skill_id FROM Skills WHERE skill_name = $1',
+        [skillName]
+      );
+      if (skillResult.rows.length === 0) {
+        throw new Error(`Skill not found: ${skillName}`);
+      }
+      const skillId = skillResult.rows[0].skill_id;
+      await client.query(
+        'INSERT INTO EventRequiredSkills (event_id, skill_id) VALUES ($1, $2)',
+        [req.params.id, skillId]
+      );
+    }
+    await client.query('COMMIT');
+    res.json({
+      message: 'Event updated successfully',
+      id: req.params.id,
+      name: req.body.name,
+      description: req.body.description,
+      location: req.body.location,
+      requiredSkills: req.body.requiredSkills,
+      urgency: req.body.urgency,
+      eventDate: req.body.eventDate
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating event:', error);
+    res.status(500).json({ message: 'Error updating event' });
+  } finally {
+    client.release();
+  }
 });
 
 // Delete an existing event
 router.delete('/:id', (req, res) => {
   res.json({ message: 'Event deleted', id: req.params.id });
 });
-
 
 module.exports = router;
