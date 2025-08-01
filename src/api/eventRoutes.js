@@ -44,6 +44,22 @@ router.get('/', async (req, res) => {
   }
 });
 
+// Get all available skills
+router.get('/skills', async (req, res) => {
+  try {
+    const result = await db.query(`
+      SELECT skill_id, skill_name
+      FROM Skills
+      ORDER BY skill_name ASC
+    `);
+    
+    res.json({ skills: result.rows });
+  } catch (error) {
+    console.error('Error fetching skills:', error);
+    res.status(500).json({ message: 'Error fetching skills' });
+  }
+});
+
 // Get a specific event
 router.get('/:id', async (req, res) => {
   try {
@@ -125,7 +141,6 @@ router.put('/:id', (req, res) => {
 router.delete('/:id', (req, res) => {
   res.json({ message: 'Event deleted', id: req.params.id });
 });
-
 
 
 module.exports = router;

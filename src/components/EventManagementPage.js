@@ -17,10 +17,12 @@ const EventManagementPage = () => {
         urgency: '',
         eventDate: ''
     });
-    const availableSkills = ['Cooking', 'Teaching', 'Cleaning', 'Gardening', 'Organizing', 'Communication'];
+    const [availableSkills, setAvailableSkills] = useState([]);
+    const [skillsLoading, setSkillsLoading] = useState(true);
 
     useEffect(() => {
         fetchEvents();
+        fetchSkills();
     }, []);
 
     const fetchEvents = async () => {
@@ -35,6 +37,24 @@ const EventManagementPage = () => {
             setLoading(false);
         }
     };
+
+    const fetchSkills = async () => {
+        try {
+            setSkillsLoading(true);
+            const response = await axios.get(`${API_BASE_URL}/skills`);
+            if (response.data && response.data.skills) {
+                setAvailableSkills(response.data.skills);
+            } else {
+                setAvailableSkills([]);
+            }
+        } catch (error) {
+            console.error('Error fetching skills:', error);
+            setAvailableSkills([]);
+        } finally {
+            setSkillsLoading(false);
+        }
+    };
+    
     const resetForm = () => {
         setFormData({
             id: '',
@@ -58,11 +78,12 @@ const EventManagementPage = () => {
     };
 
     const handleSkillsChange = (skill) => {
+        const skillValue = typeof skill === 'object' ? skill.skill_name : skill;
         setFormData(prev => ({
             ...prev,
-            requiredSkills: prev.requiredSkills.includes(skill)
-                ? prev.requiredSkills.filter(s => s !== skill)
-                : [...prev.requiredSkills, skill]
+            requiredSkills: prev.requiredSkills.includes(skillValue)
+                ? prev.requiredSkills.filter(s => s !== skillValue)
+                : [...prev.requiredSkills, skillValue]
         }));
     };
 
@@ -172,17 +193,24 @@ const EventManagementPage = () => {
                         </div>
                         <div className='w-full p-2 border border-gray-300 rounded-md'>
                             <label className='block mb-2'>Required Skills:</label>
-                            {availableSkills.map(skill => (
-                                <div key={skill}>
-                                    <label>
-                                        <input
-                                            type="checkbox"
-                                            checked={formData.requiredSkills.includes(skill)}
-                                            onChange={() => handleSkillsChange(skill)}
-                                        />  {skill}
-                                    </label>
-                                </div>
-                            ))}
+                            {skillsLoading ? (
+                                <div>Loading skills...</div>
+                            ) : (
+                                availableSkills.map(skill => {
+                                    const skillName = typeof skill === 'object' ? skill.skill_name : skill;
+                                    return (
+                                        <div key={skillName}>
+                                            <label>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={formData.requiredSkills.includes(skillName)}
+                                                    onChange={() => handleSkillsChange(skill)}
+                                                />  {skillName}
+                                            </label>
+                                        </div>
+                                    );
+                                })
+                            )}
                         </div>
                         <div className='w-full p-2 border border-gray-300 rounded-md'>
                             <label className='block mb-2'>Urgency:</label>
