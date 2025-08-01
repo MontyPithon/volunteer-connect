@@ -1,0 +1,17 @@
+cd into volunteer-connect
+npm init -y
+  npm install express joi jest supertest
+npm install express pg bcrypt joi nodemailer
+npm install --save @sendgrid/mail
+npm start
+
+new terminal
+
+cd into volunteer-connect
+cd src
+cd api
+npm init -y
+  npm install express joi jest supertest
+npm install express pg bcrypt joi nodemailer
+npm install --save @sendgrid/mail
+npm start
