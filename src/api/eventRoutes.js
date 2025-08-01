@@ -234,8 +234,27 @@ router.put('/:id', async (req, res) => {
 });
 
 // Delete an existing event
-router.delete('/:id', (req, res) => {
-  res.json({ message: 'Event deleted', id: req.params.id });
+router.delete('/:id', async (req, res) => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `DELETE FROM EventDetails WHERE event_id = $1`,
+      [req.params.id]
+    );
+    await client.query(
+      `DELETE FROM EventRequiredSkills WHERE event_id = $1`,
+      [req.params.id]
+    );
+    await client.query('COMMIT');
+    res.json({ message: 'Event deleted', id: req.params.id });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting event:', error);
+    res.status(500).json({ message: 'Error deleting event' });
+  } finally {
+    client.release();
+  }
 });
 
 module.exports = router;
