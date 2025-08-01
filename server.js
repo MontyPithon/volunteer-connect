@@ -1,33 +1,41 @@
-const express = require('express');
-const cors = require('cors');
+// Load env vars
+require('dotenv').config();
 
-const app = express();
-const PORT = 5000;
+const express = require('express');
+const cors    = require('cors');
+
+const sequelize       = require('./src/db');            // ← our new DB module
+const eventRoutes     = require('./src/api/eventRoutes');
+const matchingRoutes  = require('./src/api/matchingRoutes');
+const historyRoutes   = require('./src/api/historyRoutes');    // points to your new historyRoutes file
+const profileRoutes   = require('./src/api/profileRoutes');
+const authRoutes      = require('./src/api/authRoutes');
+const notificationRoutes = require('./src/api/notificationRoutes');
+
+const app  = express();
+const PORT = process.env.PORT || 5000;  // picks up env PORT if set
+
+// Test Postgres connection early
+sequelize.authenticate()
+  .then(() => console.log('✅ Connected to Postgres'))
+  .catch(err => console.error('❌ DB conn error:', err));
 
 app.use(cors());
 app.use(express.json());
 
-// Import routes
-const eventRoutes = require('./src/api/eventRoutes');
-const matchingRoutes = require('./src/api/matchingRoutes');
-const historyRoutes = require('./src/api/historyRoutes');
-const profileRoutes = require('./src/api/profileRoutes');
-const authRoutes = require('./src/api/authRoutes');
-const notificationRoutes = require('./src/api/notificationRoutes');
-
-// Use routes
-app.use('/api/events', eventRoutes);
-app.use('/api/match', matchingRoutes);
-app.use('/api/history', historyRoutes);
-app.use('/api/profiles', profileRoutes);
-app.use('/api/auth', authRoutes);
+// Mount all your routes
+app.use('/api/events',        eventRoutes);
+app.use('/api/match',         matchingRoutes);
+app.use('/api/history',       historyRoutes);
+app.use('/api/profiles',      profileRoutes);
+app.use('/api/auth',          authRoutes);
 app.use('/api/notifications', notificationRoutes);
 
-// Simple test route
+// Health-check
 app.get('/api/test', (req, res) => {
-    res.json({ message: 'API is working!' });
-  });
-  
+  res.json({ message: 'API is working!' });
+});
+
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-  });
+  console.log(`Server running on port ${PORT}`);
+});

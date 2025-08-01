@@ -8,6 +8,7 @@ import RegisterPage from './components/Register';
 import ProfileForm from './components/profileForm';
 import EventManagementPage from './components/EventManagementPage';
 import NotificationSystem from './components/NotificationSystem';
+import VerifyEmail from './components/VerifyEmail';
 
 function App() {
   return (
@@ -66,6 +67,14 @@ function App() {
                     Event Management
                   </Link>
                 </li>
+                                <li>
+                  <Link 
+                    to="/VerifyEmail" 
+                    className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
+                  >
+                    Verify Email
+                  </Link>
+                </li>
                 <li>
                   <Link 
                     to="/notifications" 
@@ -88,6 +97,7 @@ function App() {
             <Route path="/VolunteerHistory" element={<VolunteerHistory />} />
             <Route path="/events" element={<EventManagementPage />} />
             <Route path="/notifications" element={<NotificationSystem />} />
+            <Route path="/verify-email" element={<VerifyEmail />} />
           </Routes>
         </div>
       </div>
