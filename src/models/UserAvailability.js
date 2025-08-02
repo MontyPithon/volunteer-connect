@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
 const UserAvailability = sequelize.define('UserAvailability', {
-  id: {
+  availability_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
@@ -12,7 +12,7 @@ const UserAvailability = sequelize.define('UserAvailability', {
     allowNull: false,
     references: {
       model: 'usercredentials',
-      key: 'id',
+      key: 'user_id',
     },
   },
   available_date: {
@@ -21,9 +21,7 @@ const UserAvailability = sequelize.define('UserAvailability', {
   },
 }, {
   tableName: 'useravailability',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: false, // Only track creation for availability
+  timestamps: false,
 });
 
 module.exports = UserAvailability;

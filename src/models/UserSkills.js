@@ -2,28 +2,23 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
 const UserSkills = sequelize.define('UserSkills', {
-  id: {
-    type: DataTypes.INTEGER,
-    primaryKey: true,
-    autoIncrement: true,
-  },
   user_id: {
     type: DataTypes.INTEGER,
+    primaryKey: true,
     allowNull: false,
     references: {
       model: 'usercredentials',
-      key: 'id',
+      key: 'user_id',
     },
   },
-  skill_name: {
-    type: DataTypes.STRING(100),
+  skill_id: {
+    type: DataTypes.INTEGER,
+    primaryKey: true,
     allowNull: false,
   },
 }, {
   tableName: 'userskills',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: false, // Only track creation for skills
+  timestamps: false,
 });
 
 module.exports = UserSkills;

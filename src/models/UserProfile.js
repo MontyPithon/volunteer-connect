@@ -2,7 +2,7 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
 const UserProfile = sequelize.define('UserProfile', {
-  id: {
+  profile_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
@@ -12,7 +12,7 @@ const UserProfile = sequelize.define('UserProfile', {
     allowNull: false,
     references: {
       model: 'usercredentials',
-      key: 'id',
+      key: 'user_id',
     },
   },
   full_name: {
@@ -31,8 +31,8 @@ const UserProfile = sequelize.define('UserProfile', {
     type: DataTypes.STRING(100),
     allowNull: false,
   },
-  state: {
-    type: DataTypes.STRING(2),
+  state_code: {
+    type: DataTypes.CHAR(2),
     allowNull: false,
   },
   zip_code: {
@@ -45,9 +45,7 @@ const UserProfile = sequelize.define('UserProfile', {
   },
 }, {
   tableName: 'userprofile',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  timestamps: false,
 });
 
 module.exports = UserProfile;
