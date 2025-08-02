@@ -54,14 +54,6 @@ const stateOptions = [
   { value: 'WV', label: 'WV' },
   { value: 'WI', label: 'WI' },
   { value: 'WY', label: 'WY' }
-
-];
-
-const skillsOptions = [
-  { value: 'event_setup', label: 'Setup Crew' },
-  { value: 'cooking', label: 'Cooking' },
-  { value: 'landscaping', label: 'Land Scaping' },
-  { value: 'childcare', label: 'Childcare' },
 ];
 
 export default function ProfileForm() {
@@ -71,6 +63,7 @@ export default function ProfileForm() {
   const [success, setSuccess] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
   const [userId, setUserId] = useState(1); // Default user ID for demo purposes
+  const [skillsOptions, setSkillsOptions] = useState([]);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -93,10 +86,27 @@ export default function ProfileForm() {
     }
   };
 
-  // Load existing profile on component mount
+  // Load existing profile and skills on component mount
   useEffect(() => {
+    loadSkills();
     loadProfile();
   }, []);
+
+  const loadSkills = async () => {
+    try {
+      const response = await fetch('/api/profiles/skills');
+      if (response.ok) {
+        const data = await response.json();
+        setSkillsOptions(data.skills || []);
+      } else {
+        console.error('Failed to load skills');
+        setSkillsOptions([]);
+      }
+    } catch (err) {
+      console.error('Error loading skills:', err);
+      setSkillsOptions([]);
+    }
+  };
 
   const loadProfile = async () => {
     try {
@@ -363,7 +373,8 @@ export default function ProfileForm() {
                 <Select
                   options={skillsOptions}
                   isMulti
-                  onChange={(selected) => handleChange('skills', selected)}
+                  value={formData.skills}
+                  onChange={(selected) => handleChange('skills', selected || [])}
                   className="text-sm"
                   placeholder="Select your skills..."
                   styles={{
