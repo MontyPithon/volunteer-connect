@@ -1,14 +1,19 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
+import { AuthContext } from '../context/AuthContext';
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
 
   const handleLogin = async (e) => {
     e.preventDefault();
+    setError('');
+    setLoading(true);
 
     try {
       const response = await fetch('http://localhost:5000/api/auth/login', {
@@ -18,13 +23,25 @@ export default function Login() {
       });
 
       const data = await response.json();
-      alert(data.message || data.error || "Something went wrong.");
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Login failed');
+      }
 
 
-      if (response.ok) navigate('/profile');
+      
+      login({
+        id: data.userId || data.user_id,
+        email: data.email,
+        role: data.role, // 'admin' or 'volunteer'
+        name: data.name || data.full_name || email
+      });
+
+      navigate('/profile');
     } catch (err) {
-      console.error(err);
-      alert('Invalid credentials. Try again.');
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -43,6 +60,12 @@ return (
 
         {/* Login Form Card */}
         <div className="bg-white py-8 px-6 shadow-lg rounded-lg border border-gray-200">
+          {error && (
+            <div className="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          
           <form onSubmit={handleLogin} className="space-y-6">
             {/* Email Field */}
             <div>
@@ -79,9 +102,10 @@ return (
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+              disabled={loading}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors disabled:opacity-50"
             >
-              Sign in
+              {loading ? 'Signing in...' : 'Sign in'}
             </button>
           </form>
 

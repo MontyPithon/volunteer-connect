@@ -12,15 +12,15 @@ console.log('Request Body:', req.body);
   const { error } = validateRegistration(req.body);
   if (error) return res.status(400).json({ error: error.details[0].message });
 
-  const { email, password } = req.body;
+  const { email, password, role = 'volunteer' } = req.body; // Default to volunteer if no role specified
   const hashed = await bcrypt.hash(password, 10);
   const verification_token = crypto.randomBytes(32).toString('hex');
   console.log('Generated Token:', verification_token); // Debug log
 
   try {
     const result = await db.query(
-      'INSERT INTO usercredentials (email, password_hash, verification_token) VALUES ($1, $2, $3) RETURNING user_id',
-      [email, hashed, verification_token]
+      'INSERT INTO usercredentials (email, password_hash, verification_token, role) VALUES ($1, $2, $3, $4) RETURNING user_id',
+      [email, hashed, verification_token, role]
     );
 
     // Send verification email
@@ -62,7 +62,7 @@ exports.login = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const result = await db.query('SELECT * FROM usercredentials WHERE email = $1', [email]);
+    const result = await db.query('SELECT user_id, email, password_hash, role, is_verified FROM usercredentials WHERE email = $1', [email]);
     const user = result.rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash)))
@@ -71,7 +71,12 @@ exports.login = async (req, res) => {
     if (!user.is_verified)
       return res.status(403).json({ error: 'Please verify your email before logging in.' });
 
-    res.status(200).json({ message: 'Login successful', userId: user.user_id });
+    res.status(200).json({ 
+      message: 'Login successful', 
+      userId: user.user_id,
+      email: user.email,
+      role: user.role 
+    });
   } catch {
     res.status(500).json({ error: 'Server error' });
   }
