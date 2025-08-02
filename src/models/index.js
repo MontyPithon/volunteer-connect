@@ -2,6 +2,8 @@ const UserCredentials = require('./UserCredentials');
 const UserProfile = require('./UserProfile');
 const UserSkills = require('./UserSkills');
 const UserAvailability = require('./UserAvailability');
+const Skills = require('./Skills');
+const State = require('./State');
 
 // Define associations
 UserCredentials.hasOne(UserProfile, { 
@@ -58,9 +60,34 @@ UserAvailability.belongsTo(UserProfile, {
   targetKey: 'user_id'
 });
 
+// Skills associations
+Skills.hasMany(UserSkills, {
+  foreignKey: 'skill_id',
+  sourceKey: 'skill_id',
+  onDelete: 'CASCADE'
+});
+
+UserSkills.belongsTo(Skills, {
+  foreignKey: 'skill_id',
+  targetKey: 'skill_id'
+});
+
+// State associations
+State.hasMany(UserProfile, {
+  foreignKey: 'state_code',
+  sourceKey: 'state_code'
+});
+
+UserProfile.belongsTo(State, {
+  foreignKey: 'state_code',
+  targetKey: 'state_code'
+});
+
 module.exports = {
   UserCredentials,
   UserProfile,
   UserSkills,
   UserAvailability,
+  Skills,
+  State,
 };
