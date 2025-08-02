@@ -20,7 +20,7 @@ const UserCredentials = sequelize.define('UserCredentials', {
     allowNull: false,
   },
 }, {
-  tableName: 'user_credentials',
+  tableName: 'usercredentials',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',

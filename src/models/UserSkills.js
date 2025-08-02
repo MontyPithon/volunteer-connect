@@ -11,7 +11,7 @@ const UserSkills = sequelize.define('UserSkills', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'user_credentials',
+      model: 'usercredentials',
       key: 'id',
     },
   },
@@ -20,7 +20,7 @@ const UserSkills = sequelize.define('UserSkills', {
     allowNull: false,
   },
 }, {
-  tableName: 'user_skills',
+  tableName: 'userskills',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false, // Only track creation for skills

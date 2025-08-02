@@ -11,7 +11,7 @@ const UserProfile = sequelize.define('UserProfile', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'user_credentials',
+      model: 'usercredentials',
       key: 'id',
     },
   },
@@ -44,7 +44,7 @@ const UserProfile = sequelize.define('UserProfile', {
     allowNull: true,
   },
 }, {
-  tableName: 'user_profiles',
+  tableName: 'userprofile',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: 'updated_at',

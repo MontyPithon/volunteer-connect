@@ -11,7 +11,7 @@ const UserAvailability = sequelize.define('UserAvailability', {
     type: DataTypes.INTEGER,
     allowNull: false,
     references: {
-      model: 'user_credentials',
+      model: 'usercredentials',
       key: 'id',
     },
   },
@@ -20,7 +20,7 @@ const UserAvailability = sequelize.define('UserAvailability', {
     allowNull: false,
   },
 }, {
-  tableName: 'user_availability',
+  tableName: 'useravailability',
   timestamps: true,
   createdAt: 'created_at',
   updatedAt: false, // Only track creation for availability
