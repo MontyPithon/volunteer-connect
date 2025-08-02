@@ -1,23 +1,28 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
+import { AuthContext } from '../context/AuthContext';
 
 const API_BASE_URL = 'http://localhost:5000/api/notifications';
-const USER_ID = '1';
 
 const NotificationSystem = () => {
     const [notifications, setNotifications] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const { currentUser } = useContext(AuthContext);
 
     useEffect(() => {
-        fetchNotifications();
-    }, []);
+        if (currentUser) {
+            fetchNotifications();
+        }
+    }, [currentUser]);
 
     const fetchNotifications = async () => {
+        if (!currentUser) return;
+        
         try {
             setLoading(true);
-            const response = await axios.get(`${API_BASE_URL}/${USER_ID}`);
-            // Extract the notifications array from the response
+            const response = await axios.get(`${API_BASE_URL}/${currentUser.id}`);
+            console.log('Fetched notifications:', response.data);
             setNotifications(response.data.notifications);
         } catch (error) {
             console.error('Error fetching notifications:', error);
@@ -28,8 +33,10 @@ const NotificationSystem = () => {
     };
 
     const closeNotification = async (id) => {
+        if (!currentUser) return;
+        
         try {
-            await axios.delete(`${API_BASE_URL}/${USER_ID}/${id}`);
+            await axios.delete(`${API_BASE_URL}/${currentUser.id}/${id}`);
             setNotifications(notifications.filter(notification => notification.notification_id !== id));
         } catch (error) {
             console.error('Error marking notification as read:', error);

@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
+import { AuthContext } from '../context/AuthContext';
 
 const stateOptions = [
  { value: 'AL', label: 'AL' },
@@ -62,8 +63,8 @@ export default function ProfileForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
-  const [userId] = useState(1); // Default user ID for demo purposes
   const [skillsOptions, setSkillsOptions] = useState([]);
+  const { currentUser } = useContext(AuthContext);
   
   const [formData, setFormData] = useState({
     fullName: '',
@@ -114,10 +115,12 @@ export default function ProfileForm() {
   };
 
   const loadProfile = async () => {
+    if (!currentUser) return;
+    
     try {
       setIsLoading(true);
       setError('');
-      const response = await fetch(`/api/profiles/${userId}`);
+      const response = await fetch(`/api/profiles/${currentUser.id}`);
       
       if (response.ok) {
         const data = await response.json();
@@ -156,13 +159,20 @@ export default function ProfileForm() {
 
   useEffect(() => {
     loadSkills();
-    loadProfile();
-  }, []);
+    if (currentUser) {
+      loadProfile();
+    }
+  }, [currentUser]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
+
+    if (!currentUser) {
+      setError('You must be logged in to create or update a profile.');
+      return;
+    }
 
     if (!formData.skills || formData.skills.length === 0) {
       setError('Please select at least one skill.');
@@ -182,7 +192,7 @@ export default function ProfileForm() {
         availability: availabilityDates.map(date => formatDateForAPI(date))
       };
 
-      const url = `/api/profiles/${userId}`;
+      const url = `/api/profiles/${currentUser.id}`;
       const method = isEditMode ? 'PUT' : 'POST';
       
       const response = await fetch(url, {
