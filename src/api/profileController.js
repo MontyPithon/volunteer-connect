@@ -28,22 +28,24 @@ exports.getAllProfiles = async (req, res) => {
       ]
     });
 
-    const formattedProfiles = profiles.map(profile => ({
-      userId: profile.user_id,
-      email: profile.UserCredential?.email,
-      fullName: profile.full_name,
-      address1: profile.address1,
-      address2: profile.address2 || '',
-      city: profile.city,
-      state: profile.state_code,
-      zip: profile.zip_code,
-      skills: profile.UserSkills?.map(userSkill => ({ 
-        value: userSkill.Skill?.skill_name, 
-        label: userSkill.Skill?.skill_name 
-      })) || [],
-      preferences: profile.preferences || '',
-      availability: profile.UserAvailabilities?.map(avail => avail.available_date) || []
-    }));
+    const formattedProfiles = profiles.map(profile => {
+      return {
+        userId: profile.user_id,
+        email: profile.UserCredential?.email,
+        fullName: profile.full_name,
+        address1: profile.address1,
+        address2: profile.address2 || '',
+        city: profile.city,
+        state: profile.state_code,
+        zip: profile.zip_code,
+        skills: profile.UserSkills?.map(userSkill => ({ 
+          value: userSkill.Skill?.skill_name, 
+          label: userSkill.Skill?.skill_name 
+        })) || [],
+        preferences: profile.preferences || '',
+        availability: profile.UserAvailabilities?.map(avail => avail.available_date) || []
+      };
+    });
 
     res.status(200).json({
       message: 'Profiles retrieved successfully',

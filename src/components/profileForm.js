@@ -62,7 +62,7 @@ export default function ProfileForm() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
   const [isEditMode, setIsEditMode] = useState(false);
-  const [userId, setUserId] = useState(1); // Default user ID for demo purposes
+  const [userId] = useState(1); // Default user ID for demo purposes
   const [skillsOptions, setSkillsOptions] = useState([]);
   
   const [formData, setFormData] = useState({
@@ -76,6 +76,17 @@ export default function ProfileForm() {
     preferences: '',
   });
 
+  const formatDateForAPI = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const parseDateFromAPI = (dateString) => {
+    return new Date(dateString + 'T00:00:00');
+  };
+
   const handleChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
@@ -85,12 +96,6 @@ export default function ProfileForm() {
       setAvailabilityDates((prev) => [...prev, date]);
     }
   };
-
-  // Load existing profile and skills on component mount
-  useEffect(() => {
-    loadSkills();
-    loadProfile();
-  }, []);
 
   const loadSkills = async () => {
     try {
@@ -130,7 +135,7 @@ export default function ProfileForm() {
         });
         
         if (profile.availability) {
-          setAvailabilityDates(profile.availability.map(date => new Date(date)));
+          setAvailabilityDates(profile.availability.map(date => parseDateFromAPI(date)));
         }
         
         setIsEditMode(true);
@@ -148,6 +153,11 @@ export default function ProfileForm() {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    loadSkills();
+    loadProfile();
+  }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -169,7 +179,7 @@ export default function ProfileForm() {
       
       const profileData = {
         ...formData,
-        availability: availabilityDates.map(date => date.toISOString().split('T')[0])
+        availability: availabilityDates.map(date => formatDateForAPI(date))
       };
 
       const url = `/api/profiles/${userId}`;
@@ -184,7 +194,6 @@ export default function ProfileForm() {
       });
 
       if (response.ok) {
-        const data = await response.json();
         setSuccess(isEditMode ? 'Profile updated successfully!' : 'Profile created successfully!');
         setIsEditMode(true);
       } else {
