@@ -1,46 +1,117 @@
 const express = require('express');
 const router = express.Router();
 
+const db = require('../api/db');
+
+
 // Get all events
-router.get('/', (req, res) => {
-  // fetch events from database
-  res.json({ events: [
-    {
-        id: '1',
-        name: 'Community Cleanup',
-        description: 'A day of cleaning up the local park.',
-        location: 'Central Park, 45th St',
-        requiredSkills: ['Cleaning'],
-        urgency: 'High',
-        eventDate: '07-12-2025'
-    },
-    {
-        id: '2',
-        name: 'Food Drive',
-        description: 'Collecting food items for the local food bank.',
-        location: 'Community Center, 123 Main St',
-        requiredSkills: ['Organizing', 'Communication'],
-        urgency: 'Medium',
-        eventDate: '07-01-2025'
-    }
-  ]});
+router.get('/', async (req, res) => {
+  const client = await db.connect();
+  try {
+    const result = await client.query(`
+      SELECT
+        e.event_id,
+        e.event_name,
+        e.description,
+        e.location,
+        e.urgency,
+        e.event_date,
+        COALESCE(
+          (
+            SELECT array_agg(s.skill_name)
+            FROM EventRequiredSkills ers
+            JOIN Skills s ON s.skill_id = ers.skill_id
+            WHERE ers.event_id = e.event_id
+          ), '{}'
+        ) AS required_skills
+      FROM EventDetails e
+      ORDER BY e.event_date;
+    `);
+    
+    const events = result.rows.map(event => ({
+      id: event.event_id,
+      name: event.event_name,
+      description: event.description,
+      location: event.location,
+      requiredSkills: event.required_skills,
+      urgency: event.urgency,
+      eventDate: event.event_date
+    }));
+    
+    res.json({ events });
+  } catch (error) {
+    console.error('Error fetching events:', error);
+    res.status(500).json({ message: 'Error fetching events' });
+  } finally {
+    client.release();
+  }
+});
+
+// Get all available skills
+router.get('/skills', async (req, res) => {
+  const client = await db.connect();
+  try {
+    const result = await client.query(`
+      SELECT skill_id, skill_name
+      FROM Skills
+      ORDER BY skill_name ASC
+    `);
+    
+    res.json({ skills: result.rows });
+  } catch (error) {
+    console.error('Error fetching skills:', error);
+    res.status(500).json({ message: 'Error fetching skills' });
+  } finally {
+    client.release();
+  }
 });
 
 // Get a specific event
-router.get('/:id', (req, res) => {
-    res.json({
-        id: req.params.id,
-        name: 'Sample Event',
-        description: 'This is a sample event description.',
-        location: 'Sample Location, 123 Street',
-        requiredSkills: ['Sample Skill'],
-        urgency: 'Medium',
-        eventDate: '08-01-2025'
-    });
+router.get('/:id', async (req, res) => {
+  const client = await db.connect();
+  try {
+    const result = await client.query(`
+      SELECT
+        e.event_id,
+        e.event_name,
+        e.description,
+        e.location,
+        e.urgency,
+        e.event_date,
+        COALESCE(
+          (
+            SELECT array_agg(s.skill_name)
+            FROM EventRequiredSkills ers
+            JOIN Skills s ON s.skill_id = ers.skill_id
+            WHERE ers.event_id = e.event_id
+          ), '{}'
+        ) AS required_skills
+      FROM EventDetails e
+      WHERE $1 = e.event_id
+      ORDER BY e.event_date;
+    `, [req.params.id]);
+    
+    const event = result.rows.map(event => ({
+      id: event.event_id,
+      name: event.event_name,
+      description: event.description,
+      location: event.location,
+      requiredSkills: event.required_skills,
+      urgency: event.urgency,
+      eventDate: event.event_date
+    }))[0];
+
+    res.send(event);
+  } catch (error) {
+    console.error('Error fetching event:', error);
+    res.status(500).json({ message: 'Error fetching event' + req.params.id });
+  } finally {
+    client.release();
+  }
 });
 
 // Create a new event
-router.post('/', (req, res) => {
+router.post('/', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
@@ -50,36 +121,140 @@ router.post('/', (req, res) => {
   if (req.body.name.length > 100) {
       return res.status(400).json({ message: 'Event name must be 100 characters or less' });
   }
-  
-  const newEvent = {
-      ...req.body,
-      id: Date.now().toString()
-  };
-  
-  res.status(201).json(newEvent);
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    const eventResult = await client.query(
+      `INSERT INTO EventDetails (event_name, description, location, urgency, event_date)
+       VALUES ($1, $2, $3, $4, $5)
+       RETURNING event_id`,
+      [
+        req.body.name,
+        req.body.description,
+        req.body.location,
+        req.body.urgency,
+        req.body.eventDate
+      ]
+    );
+    const eventId = eventResult.rows[0].event_id;
+    for (const skillName of req.body.requiredSkills) {
+      // Look up skill_id by name
+      const skillResult = await client.query(
+        'SELECT skill_id FROM Skills WHERE skill_name = $1',
+        [skillName]
+      );
+      if (skillResult.rows.length === 0) {
+        throw new Error(`Skill not found: ${skillName}`);
+      }
+      const skillId = skillResult.rows[0].skill_id;
+      await client.query(
+        'INSERT INTO EventRequiredSkills (event_id, skill_id) VALUES ($1, $2)',
+        [eventId, skillId]
+      );
+    }
+    await client.query('COMMIT');
+    res.status(201).json({
+      id: eventId,
+      name: req.body.name,
+      description: req.body.description,
+      location: req.body.location,
+      requiredSkills: req.body.requiredSkills,
+      urgency: req.body.urgency,
+      eventDate: req.body.eventDate
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating event:', error);
+    res.status(500).json({ message: 'Error creating event' });
+  } finally {
+    client.release();
+  }
 });
 
 // Update an existing event
-router.put('/:id', (req, res) => {
+router.put('/:id', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
   }
-  
-  const updatedEvent = {
-      ...req.body,
-      id: req.params.id
-  };
-  
-  res.json(updatedEvent);
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `UPDATE EventDetails
+       SET event_name = $1, description = $2, location = $3, urgency = $4, event_date = $5
+       WHERE event_id = $6`,
+      [
+        req.body.name,
+        req.body.description,
+        req.body.location,
+        req.body.urgency,
+        req.body.eventDate,
+        req.params.id
+      ]
+    );
+    await client.query(
+      `DELETE FROM EventRequiredSkills WHERE event_id = $1`,
+      [req.params.id]
+    );
+    for (const skillName of req.body.requiredSkills) {
+      // Look up skill_id by name
+      const skillResult = await client.query(
+        'SELECT skill_id FROM Skills WHERE skill_name = $1',
+        [skillName]
+      );
+      if (skillResult.rows.length === 0) {
+        throw new Error(`Skill not found: ${skillName}`);
+      }
+      const skillId = skillResult.rows[0].skill_id;
+      await client.query(
+        'INSERT INTO EventRequiredSkills (event_id, skill_id) VALUES ($1, $2)',
+        [req.params.id, skillId]
+      );
+    }
+    await client.query('COMMIT');
+    res.json({
+      message: 'Event updated successfully',
+      id: req.params.id,
+      name: req.body.name,
+      description: req.body.description,
+      location: req.body.location,
+      requiredSkills: req.body.requiredSkills,
+      urgency: req.body.urgency,
+      eventDate: req.body.eventDate
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating event:', error);
+    res.status(500).json({ message: 'Error updating event' });
+  } finally {
+    client.release();
+  }
 });
 
 // Delete an existing event
-router.delete('/:id', (req, res) => {
-  res.json({ message: 'Event deleted', id: req.params.id });
+router.delete('/:id', async (req, res) => {
+  const client = await db.connect();
+  try {
+    await client.query('BEGIN');
+    await client.query(
+      `DELETE FROM EventDetails WHERE event_id = $1`,
+      [req.params.id]
+    );
+    await client.query(
+      `DELETE FROM EventRequiredSkills WHERE event_id = $1`,
+      [req.params.id]
+    );
+    await client.query('COMMIT');
+    res.json({ message: 'Event deleted', id: req.params.id });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error deleting event:', error);
+    res.status(500).json({ message: 'Error deleting event' });
+  } finally {
+    client.release();
+  }
 });
-
-
 
 module.exports = router;

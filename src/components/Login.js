@@ -18,7 +18,8 @@ export default function Login() {
       });
 
       const data = await response.json();
-      alert(data.message);
+      alert(data.message || data.error || "Something went wrong.");
+
 
       if (response.ok) navigate('/profile');
     } catch (err) {
