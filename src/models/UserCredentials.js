@@ -2,28 +2,35 @@ const { DataTypes } = require('sequelize');
 const sequelize = require('../db');
 
 const UserCredentials = sequelize.define('UserCredentials', {
-  id: {
+  user_id: {
     type: DataTypes.INTEGER,
     primaryKey: true,
     autoIncrement: true,
   },
   email: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.STRING,
     allowNull: false,
     unique: true,
-    validate: {
-      isEmail: true,
-    },
   },
   password_hash: {
-    type: DataTypes.STRING(255),
+    type: DataTypes.TEXT,
     allowNull: false,
+  },
+  is_verified: {
+    type: DataTypes.BOOLEAN,
+    defaultValue: false,
+  },
+  role: {
+    type: DataTypes.STRING,
+    allowNull: true,
+  },
+  verification_token: {
+    type: DataTypes.TEXT,
+    allowNull: true,
   },
 }, {
   tableName: 'usercredentials',
-  timestamps: true,
-  createdAt: 'created_at',
-  updatedAt: 'updated_at',
+  timestamps: false,
 });
 
 module.exports = UserCredentials;
