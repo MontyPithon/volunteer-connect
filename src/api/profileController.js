@@ -1,4 +1,4 @@
-const { UserCredentials, UserProfile, UserSkills, UserAvailability } = require('../models');
+const { UserCredentials, UserProfile, UserSkills, UserAvailability, Skills, State } = require('../models');
 const { validateProfile, validateProfileUpdate } = require('./profileValidation');
 
 /**
@@ -16,7 +16,10 @@ exports.getAllProfiles = async (req, res) => {
         },
         {
           model: UserSkills,
-          attributes: ['skill_name']
+          include: [{
+            model: Skills,
+            attributes: ['skill_name']
+          }]
         },
         {
           model: UserAvailability,
@@ -27,16 +30,16 @@ exports.getAllProfiles = async (req, res) => {
 
     const formattedProfiles = profiles.map(profile => ({
       userId: profile.user_id,
-      email: profile.UserCredentials?.email,
+      email: profile.UserCredential?.email,
       fullName: profile.full_name,
       address1: profile.address1,
       address2: profile.address2 || '',
       city: profile.city,
       state: profile.state_code,
       zip: profile.zip_code,
-      skills: profile.UserSkills?.map(skill => ({ 
-        value: skill.skill_name, 
-        label: skill.skill_name 
+      skills: profile.UserSkills?.map(userSkill => ({ 
+        value: userSkill.Skill?.skill_name, 
+        label: userSkill.Skill?.skill_name 
       })) || [],
       preferences: profile.preferences || '',
       availability: profile.UserAvailabilities?.map(avail => avail.available_date) || []
@@ -71,7 +74,10 @@ exports.getProfile = async (req, res) => {
       include: [
         {
           model: UserSkills,
-          attributes: ['skill_name']
+          include: [{
+            model: Skills,
+            attributes: ['skill_name']
+          }]
         },
         {
           model: UserAvailability,
@@ -91,9 +97,9 @@ exports.getProfile = async (req, res) => {
       city: profile.city,
       state: profile.state_code,
       zip: profile.zip_code,
-      skills: profile.UserSkills?.map(skill => ({ 
-        value: skill.skill_name, 
-        label: skill.skill_name 
+      skills: profile.UserSkills?.map(userSkill => ({ 
+        value: userSkill.Skill?.skill_name, 
+        label: userSkill.Skill?.skill_name 
       })) || [],
       preferences: profile.preferences || '',
       availability: profile.UserAvailabilities?.map(avail => avail.available_date) || []
@@ -165,24 +171,44 @@ exports.createProfile = async (req, res) => {
     }, { transaction });
 
     // Create skills
-    const skillsData = skills.map(skill => ({
-      user_id: userId,
-      skill_name: skill.value
-    }));
-    await UserSkills.bulkCreate(skillsData, { transaction });
+    if (skills && skills.length > 0) {
+      const skillsData = [];
+      for (const skill of skills) {
+        // Look up skill_id by skill name
+        let skillRecord = await Skills.findOne({
+          where: { skill_name: skill.value || skill },
+          transaction
+        });
+        
+        if (!skillRecord) {
+          // Create new skill if it doesn't exist
+          skillRecord = await Skills.create({
+            skill_name: skill.value || skill
+          }, { transaction });
+        }
+        
+        skillsData.push({
+          user_id: userId,
+          skill_id: skillRecord.skill_id
+        });
+      }
+      await UserSkills.bulkCreate(skillsData, { transaction });
+    }
 
     // Create availability
-    const availabilityData = availability.map(date => ({
-      user_id: userId,
-      available_date: date
-    }));
-    await UserAvailability.bulkCreate(availabilityData, { transaction });
+    if (availability && availability.length > 0) {
+      const availabilityData = availability.map(date => ({
+        user_id: userId,
+        available_date: date
+      }));
+      await UserAvailability.bulkCreate(availabilityData, { transaction });
+    }
 
     await transaction.commit();
 
     res.status(201).json({
       message: 'Profile created successfully',
-      profileId: newProfile.id
+      profileId: newProfile.profile_id
     });
   } catch (error) {
     await transaction.rollback();
@@ -227,43 +253,66 @@ exports.updateProfile = async (req, res) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    // Update profile
-    await existingProfile.update({
-      full_name: fullName,
-      address1,
-      address2: address2 || null,
-      city,
-      state_code: state,
-      zip_code: zip,
-      preferences: preferences || null
-    }, { transaction });
+    // Update profile fields only if provided
+    const updateData = {};
+    if (fullName !== undefined) updateData.full_name = fullName;
+    if (address1 !== undefined) updateData.address1 = address1;
+    if (address2 !== undefined) updateData.address2 = address2 || null;
+    if (city !== undefined) updateData.city = city;
+    if (state !== undefined) updateData.state_code = state;
+    if (zip !== undefined) updateData.zip_code = zip;
+    if (preferences !== undefined) updateData.preferences = preferences || null;
+
+    await existingProfile.update(updateData, { transaction });
 
     // Update skills if provided
-    if (skills) {
+    if (skills !== undefined) {
+      // Remove existing skills
       await UserSkills.destroy({ 
         where: { user_id: userId },
         transaction 
       });
       
-      const skillsData = skills.map(skill => ({
-        user_id: userId,
-        skill_name: skill.value
-      }));
-      await UserSkills.bulkCreate(skillsData, { transaction });
+      // Add new skills
+      if (skills.length > 0) {
+        const skillsData = [];
+        for (const skill of skills) {
+          let skillRecord = await Skills.findOne({
+            where: { skill_name: skill.value || skill },
+            transaction
+          });
+          
+          if (!skillRecord) {
+            skillRecord = await Skills.create({
+              skill_name: skill.value || skill
+            }, { transaction });
+          }
+          
+          skillsData.push({
+            user_id: userId,
+            skill_id: skillRecord.skill_id
+          });
+        }
+        await UserSkills.bulkCreate(skillsData, { transaction });
+      }
     }
 
     // Update availability if provided
-    if (availability) {
+    if (availability !== undefined) {
+      // Remove existing availability
       await UserAvailability.destroy({ 
         where: { user_id: userId },
         transaction 
       });
       
-      const availabilityData = availability.map(date => ({
-        user_id: userId,
-        available_date: date
-      }));
-      await UserAvailability.bulkCreate(availabilityData, { transaction });
+      // Add new availability
+      if (availability.length > 0) {
+        const availabilityData = availability.map(date => ({
+          user_id: userId,
+          available_date: date
+        }));
+        await UserAvailability.bulkCreate(availabilityData, { transaction });
+      }
     }
 
     await transaction.commit();
@@ -294,7 +343,7 @@ exports.deleteProfile = async (req, res) => {
       return res.status(400).json({ error: 'Invalid user ID' });
     }
 
-    // Find and delete profile
+    // Find and delete profile (CASCADE will handle related records)
     const deletedCount = await UserProfile.destroy({
       where: { user_id: userId },
       transaction
@@ -305,8 +354,6 @@ exports.deleteProfile = async (req, res) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    // Associated skills and availability will be deleted by CASCADE
-
     await transaction.commit();
 
     res.status(200).json({
@@ -315,6 +362,34 @@ exports.deleteProfile = async (req, res) => {
   } catch (error) {
     await transaction.rollback();
     console.error('Error deleting profile:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+/**
+ * Get all available skills
+ * @param {Object} req - Express request object
+ * @param {Object} res - Express response object
+ */
+exports.getAllSkills = async (req, res) => {
+  try {
+    const skills = await Skills.findAll({
+      attributes: ['skill_id', 'skill_name'],
+      order: [['skill_name', 'ASC']]
+    });
+
+    const formattedSkills = skills.map(skill => ({
+      value: skill.skill_name,
+      label: skill.skill_name,
+      id: skill.skill_id
+    }));
+
+    res.status(200).json({
+      message: 'Skills retrieved successfully',
+      skills: formattedSkills
+    });
+  } catch (error) {
+    console.error('Error getting skills:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 };

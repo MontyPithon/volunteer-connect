@@ -5,7 +5,8 @@ const {
   createProfile,
   updateProfile,
   deleteProfile,
-  getAllProfiles
+  getAllProfiles,
+  getAllSkills
 } = require('./profileController');
 
 /**
@@ -14,6 +15,13 @@ const {
  * @access  Public (for demo purposes)
  */
 router.get('/', getAllProfiles);
+
+/**
+ * @route   GET /api/profiles/skills
+ * @desc    Get all available skills
+ * @access  Public (for demo purposes)
+ */
+router.get('/skills', getAllSkills);
 
 /**
  * @route   GET /api/profiles/:userId
