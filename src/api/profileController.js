@@ -12,7 +12,7 @@ exports.getAllProfiles = async (req, res) => {
       include: [
         {
           model: UserCredentials,
-          attributes: ['id', 'email']
+          attributes: ['user_id', 'email']
         },
         {
           model: UserSkills,
@@ -27,12 +27,12 @@ exports.getAllProfiles = async (req, res) => {
 
     const formattedProfiles = profiles.map(profile => ({
       userId: profile.user_id,
-      email: profile.UserCredential?.email,
+      email: profile.UserCredentials?.email,
       fullName: profile.full_name,
       address1: profile.address1,
       address2: profile.address2 || '',
       city: profile.city,
-      state: profile.state,
+      state: profile.state_code,
       zip: profile.zip_code,
       skills: profile.UserSkills?.map(skill => ({ 
         value: skill.skill_name, 
@@ -89,7 +89,7 @@ exports.getProfile = async (req, res) => {
       address1: profile.address1,
       address2: profile.address2 || '',
       city: profile.city,
-      state: profile.state,
+      state: profile.state_code,
       zip: profile.zip_code,
       skills: profile.UserSkills?.map(skill => ({ 
         value: skill.skill_name, 
@@ -159,7 +159,7 @@ exports.createProfile = async (req, res) => {
       address1,
       address2: address2 || null,
       city,
-      state,
+      state_code: state,
       zip_code: zip,
       preferences: preferences || null
     }, { transaction });
@@ -233,7 +233,7 @@ exports.updateProfile = async (req, res) => {
       address1,
       address2: address2 || null,
       city,
-      state,
+      state_code: state,
       zip_code: zip,
       preferences: preferences || null
     }, { transaction });
