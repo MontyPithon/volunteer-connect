@@ -1,8 +1,6 @@
 const express = require('express');
 const router = express.Router();
 
-const events = require('../components/events');
-const volunteers = require('../components/volunteers');
 const db = require('./db'); // Add db import
 
 // Matching logic function
