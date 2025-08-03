@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
 
@@ -10,13 +10,7 @@ const NotificationSystem = () => {
     const [error, setError] = useState(null);
     const { currentUser } = useContext(AuthContext);
 
-    useEffect(() => {
-        if (currentUser) {
-            fetchNotifications();
-        }
-    }, [currentUser]);
-
-    const fetchNotifications = async () => {
+    const fetchNotifications = useCallback(async () => {
         if (!currentUser) return;
         
         try {
@@ -30,7 +24,13 @@ const NotificationSystem = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [currentUser]);
+
+    useEffect(() => {
+        if (currentUser) {
+            fetchNotifications();
+        }
+    }, [currentUser, fetchNotifications]);
 
     const closeNotification = async (id) => {
         if (!currentUser) return;

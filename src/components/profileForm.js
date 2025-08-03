@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext, useCallback } from 'react';
 import Select from 'react-select';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
@@ -114,7 +114,7 @@ export default function ProfileForm() {
     }
   };
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     if (!currentUser) return;
     
     try {
@@ -155,14 +155,14 @@ export default function ProfileForm() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [currentUser]);
 
   useEffect(() => {
     loadSkills();
     if (currentUser) {
       loadProfile();
     }
-  }, [currentUser]);
+  }, [currentUser, loadProfile]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
