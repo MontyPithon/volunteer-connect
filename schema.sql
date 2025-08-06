@@ -54,6 +54,13 @@ CREATE TABLE EventDetails (
     event_name VARCHAR(100) NOT NULL,
     description TEXT       NOT NULL,
     location    TEXT       NOT NULL,
+    address1 VARCHAR(100),
+    address2 VARCHAR(100),
+    city VARCHAR(100),
+    state_code CHAR(2) NOT NULL
+                  REFERENCES States(state_code),
+    zip_code VARCHAR(10) NOT NULL
+                  CHECK (char_length(zip_code) BETWEEN 5 AND 9),
     urgency     VARCHAR(20) NOT NULL,
     event_date  DATE        NOT NULL,
     CONSTRAINT chk_urgency

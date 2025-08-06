@@ -3,6 +3,60 @@ import axios from 'axios';
 
 const API_BASE_URL = 'http://localhost:5000/api/events';
 
+// US States list
+const stateOptions = [
+  { value: 'AL', label: 'AL' },
+  { value: 'AK', label: 'AK' },
+  { value: 'AZ', label: 'AZ' },
+  { value: 'AR', label: 'AR' },
+  { value: 'CA', label: 'CA' },
+  { value: 'CO', label: 'CO' },
+  { value: 'CT', label: 'CT' },
+  { value: 'DE', label: 'DE' },
+  { value: 'FL', label: 'FL' },
+  { value: 'GA', label: 'GA' },
+  { value: 'HI', label: 'HI' },
+  { value: 'ID', label: 'ID' },
+  { value: 'IL', label: 'IL' },
+  { value: 'IN', label: 'IN' },
+  { value: 'IA', label: 'IA' },
+  { value: 'KS', label: 'KS' },
+  { value: 'KY', label: 'KY' },
+  { value: 'LA', label: 'LA' },
+  { value: 'ME', label: 'ME' },
+  { value: 'MD', label: 'MD' },
+  { value: 'MA', label: 'MA' },
+  { value: 'MI', label: 'MI' },
+  { value: 'MN', label: 'MN' },
+  { value: 'MS', label: 'MS' },
+  { value: 'MO', label: 'MO' },
+  { value: 'MT', label: 'MT' },
+  { value: 'NE', label: 'NE' },
+  { value: 'NV', label: 'NV' },
+  { value: 'NH', label: 'NH' },
+  { value: 'NJ', label: 'NJ' },
+  { value: 'NM', label: 'NM' },
+  { value: 'NY', label: 'NY' },
+  { value: 'NC', label: 'NC' },
+  { value: 'ND', label: 'ND' },
+  { value: 'OH', label: 'OH' },
+  { value: 'OK', label: 'OK' },
+  { value: 'OR', label: 'OR' },
+  { value: 'PA', label: 'PA' },
+  { value: 'RI', label: 'RI' },
+  { value: 'SC', label: 'SC' },
+  { value: 'SD', label: 'SD' },
+  { value: 'TN', label: 'TN' },
+  { value: 'TX', label: 'TX' },
+  { value: 'UT', label: 'UT' },
+  { value: 'VT', label: 'VT' },
+  { value: 'VA', label: 'VA' },
+  { value: 'WA', label: 'WA' },
+  { value: 'WV', label: 'WV' },
+  { value: 'WI', label: 'WI' },
+  { value: 'WY', label: 'WY' }
+];
+
 const EventManagementPage = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -13,6 +67,11 @@ const EventManagementPage = () => {
         name: '',
         description: '',
         location: '',
+        address1: '',
+        address2: '',
+        city: '',
+        stateCode: '',
+        zipCode: '',
         requiredSkills: [],
         urgency: '',
         eventDate: ''
@@ -61,6 +120,11 @@ const EventManagementPage = () => {
             name: '',
             description: '',
             location: '',
+            address1: '',
+            address2: '',
+            city: '',
+            stateCode: '',
+            zipCode: '',
             requiredSkills: [],
             urgency: '',
             eventDate: ''
@@ -93,6 +157,7 @@ const EventManagementPage = () => {
 
         // Validation
         if (!formData.name || !formData.description || !formData.location ||
+            !formData.city || !formData.stateCode || !formData.zipCode ||
             formData.requiredSkills.length === 0 || !formData.urgency || !formData.eventDate) {
             alert('Please fill in all required fields');
             return;
@@ -190,6 +255,68 @@ const EventManagementPage = () => {
                                 required
                                 className='w-full p-2 border border-gray-300 rounded-md'
                             />
+                        </div>
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="address1"
+                                    placeholder="Address Line 1"
+                                    value={formData.address1}
+                                    onChange={handleInputChange}
+                                    className='w-full p-2 border border-gray-300 rounded-md'
+                                />
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="address2"
+                                    placeholder="Address Line 2 (Optional)"
+                                    value={formData.address2}
+                                    onChange={handleInputChange}
+                                    className='w-full p-2 border border-gray-300 rounded-md'
+                                />
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="city"
+                                    placeholder="City"
+                                    value={formData.city}
+                                    onChange={handleInputChange}
+                                    required
+                                    className='w-full p-2 border border-gray-300 rounded-md'
+                                />
+                            </div>
+                        </div>
+                        <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                            <div>
+                                <select
+                                    name="stateCode"
+                                    value={formData.stateCode}
+                                    onChange={handleInputChange}
+                                    required
+                                    className='w-full p-2 border border-gray-300 rounded-md'
+                                >
+                                    <option value="">Select State</option>
+                                    {stateOptions.map(state => (
+                                        <option key={state.value} value={state.value}>
+                                            {state.label}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <input
+                                    type="text"
+                                    name="zipCode"
+                                    placeholder="ZIP Code"
+                                    value={formData.zipCode}
+                                    onChange={handleInputChange}
+                                    required
+                                    className='w-full p-2 border border-gray-300 rounded-md'
+                                />
+                            </div>
                         </div>
                         <div className='w-full p-2 border border-gray-300 rounded-md'>
                             <label className='block mb-2'>Required Skills:</label>
