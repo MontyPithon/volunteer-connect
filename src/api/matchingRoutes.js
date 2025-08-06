@@ -3,41 +3,74 @@ const router = express.Router();
 
 const db = require('./db'); // Add db import
 
-// Matching logic function
+
+function getMatchType(volunteer, event) {
+  const volunteerSkills = volunteer.skills || [];
+  const eventSkills = event.requiredSkills || [];
+  const volunteerAvailability = volunteer.availability || [];
+  
+  const dateMatch = volunteerAvailability.includes(event.date);
+  if (!dateMatch) return null;
+  
+  const stateMatch = volunteer.stateCode === event.stateCode;
+  if (!stateMatch) return null;
+  
+  const hasAllSkills = eventSkills.length === 0 || 
+                      eventSkills.every(skill => volunteerSkills.includes(skill));
+  const hasSomeSkills = eventSkills.length === 0 || 
+                       eventSkills.some(skill => volunteerSkills.includes(skill));
+  
+  const cityMatch = volunteer.city && event.city && 
+                   volunteer.city.toLowerCase() === event.city.toLowerCase();
+  
+  if (hasAllSkills && cityMatch) {
+    return 'full';
+  } else if (hasAllSkills && !cityMatch) {
+    return 'city';
+  } else if (hasSomeSkills) {
+    return 'partial';
+  }
+  
+  return null;
+}
+
 function matchVolunteerToEvents(volunteer, events) {
-  return events.filter(event => {
-    // Ensure arrays exist
-    const volunteerSkills = volunteer.skills || [];
-    const eventSkills = event.requiredSkills || [];
-    const volunteerAvailability = volunteer.availability || [];
+  const results = {
+    fullMatches: [],
+    cityMatches: [],
+    partialMatches: []
+  };
+  
+  events.forEach(event => {
+    const matchType = getMatchType(volunteer, event);
     
-    // Check if volunteer has at least one of the required skills
-    const skillMatch = eventSkills.length === 0 || 
-                      eventSkills.some(skill => volunteerSkills.includes(skill));
-    
-    // Check if volunteer is available on the event date
-    const dateMatch = volunteerAvailability.includes(event.date);
-    
-    // Only require skill and date match, location match is no longer required
-    return skillMatch && dateMatch;
+    if (matchType === 'full') {
+      results.fullMatches.push({ ...event, matchType: 'full' });
+    } else if (matchType === 'city') {
+      results.cityMatches.push({ ...event, matchType: 'city' });
+    } else if (matchType === 'partial') {
+      results.partialMatches.push({ ...event, matchType: 'partial' });
+    }
   });
+  
+  return [
+    ...results.fullMatches,
+    ...results.cityMatches,
+    ...results.partialMatches
+  ];
 }
 
 // POST /api/match
 router.post('/', async (req, res) => {
   const volunteer = req.body;
 
-  // Validate input with more flexibility
   if (!volunteer) {
     return res.status(400).json({ error: 'Invalid volunteer data: missing volunteer object.' });
   }
-  
-  // Ensure skills and availability are arrays
+
   volunteer.skills = volunteer.skills || [];
   volunteer.availability = volunteer.availability || [];
   
-  // City is no longer required for matching
-
   const client = await db.connect();
   try {
     // Get all events with their required skills
@@ -47,6 +80,11 @@ router.post('/', async (req, res) => {
         e.event_name,
         e.description,
         e.location,
+        e.address1,
+        e.address2,
+        e.city,
+        e.state_code,
+        e.zip_code,
         e.urgency,
         e.event_date,
         TO_CHAR(e.event_date, 'YYYY-MM-DD') AS formatted_date,
@@ -67,12 +105,16 @@ router.post('/', async (req, res) => {
       name: event.event_name,
       description: event.description,
       location: event.location,
+      address1: event.address1,
+      address2: event.address2,
+      city: event.city,
+      stateCode: event.state_code,
+      zipCode: event.zip_code,
       requiredSkills: event.required_skills || [],
       urgency: event.urgency,
-      date: event.formatted_date // Using the formatted date for easier comparison
+      date: event.formatted_date 
     }));
     
-    // Use the matching function with the fetched events
     const matchedEvents = matchVolunteerToEvents(volunteer, events);
     
     res.json({ matches: matchedEvents });
@@ -167,6 +209,7 @@ router.get('/profiles', async (req, res) => {
         up.full_name,
         up.city,
         up.state_code,
+        up.preferences,
         COALESCE(
           (
             SELECT array_agg(s.skill_name)
@@ -192,7 +235,8 @@ router.get('/profiles', async (req, res) => {
       userId: profile.user_id,
       fullName: profile.full_name,
       city: profile.city,
-      state: profile.state_code,
+      stateCode: profile.state_code,
+      preferences: profile.preferences,
       skills: profile.skills,
       availability: profile.availability
     }));
@@ -216,6 +260,7 @@ router.get('/profiles/:id', async (req, res) => {
         up.full_name,
         up.city,
         up.state_code,
+        up.preferences,
         COALESCE(
           (
             SELECT array_agg(s.skill_name)
@@ -246,13 +291,134 @@ router.get('/profiles/:id', async (req, res) => {
       userId: profile.user_id,
       fullName: profile.full_name,
       city: profile.city,
-      state: profile.state_code,
+      stateCode: profile.state_code,
+      preferences: profile.preferences,
       skills: profile.skills,
       availability: profile.availability
     });
   } catch (error) {
     console.error(`Error fetching profile ${req.params.id}:`, error);
     res.status(500).json({ error: `Error fetching profile ${req.params.id}` });
+  } finally {
+    client.release();
+  }
+});
+
+// GET /api/match/event/:eventId - Get volunteers that match a specific event
+router.get('/event/:eventId', async (req, res) => {
+  const eventId = req.params.eventId;
+  
+  if (!eventId) {
+    return res.status(400).json({ error: 'Event ID is required.' });
+  }
+
+  const client = await db.connect();
+  try {
+    // Get the specific event details
+    const eventResult = await client.query(`
+      SELECT
+        e.event_id,
+        e.event_name,
+        e.description,
+        e.location,
+        e.address1,
+        e.address2,
+        e.city,
+        e.state_code,
+        e.zip_code,
+        e.urgency,
+        e.event_date,
+        TO_CHAR(e.event_date, 'YYYY-MM-DD') AS formatted_date,
+        COALESCE(
+          (
+            SELECT array_agg(s.skill_name)
+            FROM EventRequiredSkills ers
+            JOIN Skills s ON s.skill_id = ers.skill_id
+            WHERE ers.event_id = e.event_id
+          ), '{}'
+        ) AS required_skills
+      FROM EventDetails e
+      WHERE e.event_id = $1;
+    `, [eventId]);
+    
+    if (eventResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Event not found.' });
+    }
+    
+    const event = {
+      id: eventResult.rows[0].event_id,
+      name: eventResult.rows[0].event_name,
+      description: eventResult.rows[0].description,
+      location: eventResult.rows[0].location,
+      address1: eventResult.rows[0].address1,
+      address2: eventResult.rows[0].address2,
+      city: eventResult.rows[0].city,
+      stateCode: eventResult.rows[0].state_code,
+      zipCode: eventResult.rows[0].zip_code,
+      requiredSkills: eventResult.rows[0].required_skills || [],
+      urgency: eventResult.rows[0].urgency,
+      date: eventResult.rows[0].formatted_date
+    };
+
+    // Get all volunteer profiles
+    const profilesResult = await client.query(`
+      SELECT 
+        uc.user_id,
+        up.full_name,
+        up.city,
+        up.state_code,
+        up.preferences,
+        COALESCE(
+          (
+            SELECT array_agg(s.skill_name)
+            FROM UserSkills us
+            JOIN Skills s ON s.skill_id = us.skill_id
+            WHERE us.user_id = uc.user_id
+          ), '{}'
+        ) AS skills,
+        COALESCE(
+          (
+            SELECT array_agg(TO_CHAR(ua.available_date, 'YYYY-MM-DD'))
+            FROM UserAvailability ua
+            WHERE ua.user_id = uc.user_id
+          ), '{}'
+        ) AS availability
+      FROM UserCredentials uc
+      JOIN UserProfile up ON up.user_id = uc.user_id
+      WHERE uc.role = 'volunteer'
+      ORDER BY up.full_name
+    `);
+
+    const matchedVolunteers = [];
+    
+    profilesResult.rows.forEach(profile => {
+      const volunteer = {
+        id: profile.user_id,
+        fullName: profile.full_name,
+        city: profile.city,
+        stateCode: profile.state_code,
+        preferences: profile.preferences,
+        skills: profile.skills || [],
+        availability: profile.availability || []
+      };
+      
+      const matchType = getMatchType(volunteer, event);
+      
+      if (matchType) {
+        matchedVolunteers.push({ ...volunteer, matchType });
+      }
+    });
+    
+    const sortedMatches = [
+      ...matchedVolunteers.filter(v => v.matchType === 'full'),
+      ...matchedVolunteers.filter(v => v.matchType === 'city'),
+      ...matchedVolunteers.filter(v => v.matchType === 'partial')
+    ];
+
+    res.json({ matches: sortedMatches });
+  } catch (error) {
+    console.error('Error finding volunteers for event:', error);
+    res.status(500).json({ error: 'Error finding volunteers for event' });
   } finally {
     client.release();
   }

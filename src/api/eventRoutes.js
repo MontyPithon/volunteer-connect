@@ -14,6 +14,11 @@ router.get('/', async (req, res) => {
         e.event_name,
         e.description,
         e.location,
+        e.address1,
+        e.address2,
+        e.city,
+        e.state_code,
+        e.zip_code,
         e.urgency,
         e.event_date,
         COALESCE(
@@ -33,6 +38,11 @@ router.get('/', async (req, res) => {
       name: event.event_name,
       description: event.description,
       location: event.location,
+      address1: event.address1,
+      address2: event.address2,
+      city: event.city,
+      stateCode: event.state_code,
+      zipCode: event.zip_code,
       requiredSkills: event.required_skills,
       urgency: event.urgency,
       eventDate: event.event_date
@@ -76,6 +86,11 @@ router.get('/:id', async (req, res) => {
         e.event_name,
         e.description,
         e.location,
+        e.address1,
+        e.address2,
+        e.city,
+        e.state_code,
+        e.zip_code,
         e.urgency,
         e.event_date,
         COALESCE(
@@ -96,6 +111,11 @@ router.get('/:id', async (req, res) => {
       name: event.event_name,
       description: event.description,
       location: event.location,
+      address1: event.address1,
+      address2: event.address2,
+      city: event.city,
+      stateCode: event.state_code,
+      zipCode: event.zip_code,
       requiredSkills: event.required_skills,
       urgency: event.urgency,
       eventDate: event.event_date
@@ -113,6 +133,7 @@ router.get('/:id', async (req, res) => {
 // Create a new event
 router.post('/', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
+      !req.body.city || !req.body.stateCode || !req.body.zipCode ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -125,13 +146,18 @@ router.post('/', async (req, res) => {
   try {
     await client.query('BEGIN');
     const eventResult = await client.query(
-      `INSERT INTO EventDetails (event_name, description, location, urgency, event_date)
-       VALUES ($1, $2, $3, $4, $5)
+      `INSERT INTO EventDetails (event_name, description, location, address1, address2, city, state_code, zip_code, urgency, event_date)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
        RETURNING event_id`,
       [
         req.body.name,
         req.body.description,
         req.body.location,
+        req.body.address1 || null,
+        req.body.address2 || null,
+        req.body.city || null,
+        req.body.stateCode,
+        req.body.zipCode,
         req.body.urgency,
         req.body.eventDate
       ]
@@ -158,6 +184,11 @@ router.post('/', async (req, res) => {
       name: req.body.name,
       description: req.body.description,
       location: req.body.location,
+      address1: req.body.address1,
+      address2: req.body.address2,
+      city: req.body.city,
+      stateCode: req.body.stateCode,
+      zipCode: req.body.zipCode,
       requiredSkills: req.body.requiredSkills,
       urgency: req.body.urgency,
       eventDate: req.body.eventDate
@@ -174,6 +205,7 @@ router.post('/', async (req, res) => {
 // Update an existing event
 router.put('/:id', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
+      !req.body.city || !req.body.stateCode || !req.body.zipCode ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -183,12 +215,18 @@ router.put('/:id', async (req, res) => {
     await client.query('BEGIN');
     await client.query(
       `UPDATE EventDetails
-       SET event_name = $1, description = $2, location = $3, urgency = $4, event_date = $5
-       WHERE event_id = $6`,
+       SET event_name = $1, description = $2, location = $3, address1 = $4, address2 = $5, 
+           city = $6, state_code = $7, zip_code = $8, urgency = $9, event_date = $10
+       WHERE event_id = $11`,
       [
         req.body.name,
         req.body.description,
         req.body.location,
+        req.body.address1 || null,
+        req.body.address2 || null,
+        req.body.city,
+        req.body.stateCode,
+        req.body.zipCode,
         req.body.urgency,
         req.body.eventDate,
         req.params.id
@@ -220,6 +258,11 @@ router.put('/:id', async (req, res) => {
       name: req.body.name,
       description: req.body.description,
       location: req.body.location,
+      address1: req.body.address1,
+      address2: req.body.address2,
+      city: req.body.city,
+      stateCode: req.body.stateCode,
+      zipCode: req.body.zipCode,
       requiredSkills: req.body.requiredSkills,
       urgency: req.body.urgency,
       eventDate: req.body.eventDate
