@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useContext, useCallback } from 'react';
 import axios from 'axios';
 import { AuthContext } from '../context/AuthContext';
+import { useNotifications } from '../hooks/useNotifications';
 
 const API_BASE_URL = 'http://localhost:5000/api/notifications';
 
@@ -9,6 +10,7 @@ const NotificationSystem = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const { currentUser } = useContext(AuthContext);
+    const { refreshCount } = useNotifications();
 
     const fetchNotifications = useCallback(async () => {
         if (!currentUser) return;
@@ -38,6 +40,7 @@ const NotificationSystem = () => {
         try {
             await axios.delete(`${API_BASE_URL}/${currentUser.id}/${id}`);
             setNotifications(notifications.filter(notification => notification.notification_id !== id));
+            refreshCount();
         } catch (error) {
             console.error('Error marking notification as read:', error);
             setError(error.message);

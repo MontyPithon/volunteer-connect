@@ -10,6 +10,8 @@ import ProfileForm from './components/profileForm';
 import EventManagementPage from './components/EventManagementPage';
 import NotificationSystem from './components/NotificationSystem';
 import VerifyEmail from './components/VerifyEmail';
+import NotificationBadge from './components/NotificationBadge';
+import { useNotifications } from './hooks/useNotifications';
 
 
 const ProtectedRoute = ({ children, allowedRoles }) => {
@@ -41,6 +43,28 @@ const NavLink = ({ to, children, allowedRoles }) => {
       >
         {children}
       </Link>
+    </li>
+  );
+};
+
+const NotificationNavLink = () => {
+  const { currentUser } = useContext(AuthContext);
+  const { notificationCount } = useNotifications();
+  
+  if (!currentUser) {
+    return null;
+  }
+  
+  return (
+    <li>
+      <NotificationBadge count={notificationCount}>
+        <Link 
+          to="/notifications" 
+          className="text-gray-700 hover:text-blue-600 font-medium transition-colors duration-200"
+        >
+          Notifications
+        </Link>
+      </NotificationBadge>
     </li>
   );
 };
@@ -81,9 +105,7 @@ function AppContent() {
                     <NavLink to="/VolunteerMatchingForm" allowedRoles={['admin']}>
                       Match Volunteers
                     </NavLink>
-                    <NavLink to="/notifications">
-                      Notifications
-                    </NavLink>
+                    <NotificationNavLink />
                   </>
                 )}
               </ul>
