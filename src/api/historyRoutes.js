@@ -40,4 +40,34 @@ router.get('/:id', async (req, res) => {
   }
 });
 
+// PUT /api/history/confirm/:historyId
+router.put('/confirm/:historyId', async (req, res) => {
+  const historyId = req.params.historyId;
+
+  try {
+    const client = await db.connect();
+
+    const result = await client.query(`
+      UPDATE VolunteerHistory 
+      SET status = 'Confirmed'
+      WHERE history_id = $1 AND status = 'Assigned'
+      RETURNING history_id, user_id, event_id, status
+    `, [historyId]);
+    
+    await client.end();
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'History record not found or not in assignable state.' });
+    }
+
+    res.json({ 
+      message: 'Successfully confirmed attendance',
+      history: result.rows[0] 
+    });
+  } catch (error) {
+    console.error('Error confirming attendance:', error);
+    res.status(500).json({ error: 'Failed to confirm attendance' });
+  }
+});
+
 module.exports = router;
