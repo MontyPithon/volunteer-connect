@@ -1,9 +1,12 @@
-require('dotenv').config({ path: '../../sendgrid.env' });
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../.env') });
 const bcrypt = require('bcrypt');
 const db = require('./db');
 const { validateRegistration, validateLogin } = require('./authValidation');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+console.log("Email:", process.env.EMAIL_USER);
+console.log("Password:", process.env.EMAIL_PASS);
 
 exports.register = async (req, res) => {
   //
@@ -29,7 +32,7 @@ console.log('Request Body:', req.body);
       port: 587,
       auth: {
       user: 'apikey',             
-      pass: process.env.SENDGRID_API_KEY, 
+      pass: process.env.SENDGRID_API_KEY,
       },
     });
     const verificationUrl = `http://localhost:3000/verify-email?verification_token=${verification_token}`;
@@ -39,8 +42,26 @@ console.log('Request Body:', req.body);
       to: email,
       from: process.env.EMAIL_FROM,
       subject: 'Verify your email',
-      text: `Click to verify: ${verificationUrl}`,
-    });
+       html: `
+    <div style="font-family: Arial, sans-serif; background-color: #f9fafb; padding: 20px;">
+      <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; padding: 30px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);">
+        <h2 style="color: #111827; margin-bottom: 10px;">Welcome to Volunteer Connect!</h2>
+        <p style="color: #4b5563; font-size: 16px;">Thanks for registering. Please verify your email address to complete your signup.</p>
+        
+        <div style="text-align: center; margin: 30px 0;">
+          <a href="${verificationUrl}" style="background-color: #3b82f6; color: white; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; display: inline-block;">
+            Verify Email
+          </a>
+        </div>
+
+        <p style="color: #6b7280; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+        <p style="color: #2563eb; font-size: 14px; word-break: break-all;">${verificationUrl}</p>
+
+        <p style="color: #9ca3af; font-size: 12px; margin-top: 30px;">If you didn’t create an account, you can ignore this email.</p>
+      </div>
+    </div>
+  `,
+});
 
     res.status(201).json({ message: 'User registered. Please check your email to verify your account.' });
   } catch (err) {
@@ -91,7 +112,7 @@ exports.verifyEmail = async (req, res) => {
       'UPDATE usercredentials SET is_verified = TRUE, verification_token = NULL WHERE verification_token = $1 RETURNING user_id',
       [verification_token]
     );
-    if (result.rowCount === 0) return res.status(400).json({ error: 'Invalid or expired token' });
+
     res.status(200).json({ message: 'Email verified successfully' });
   } catch {
     res.status(500).json({ error: 'Server error' });
