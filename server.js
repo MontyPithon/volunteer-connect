@@ -12,6 +12,7 @@ const historyRoutes   = require('./src/api/historyRoutes');    // points to your
 const profileRoutes   = require('./src/api/profileRoutes');
 const authRoutes      = require('./src/api/authRoutes');
 const notificationRoutes = require('./src/api/notificationRoutes');
+const reportRoutes      = require('./src/api/reportRoutes');
 
 const app  = express();
 const PORT = process.env.PORT || 5000;  // picks up env PORT if set
@@ -31,6 +32,7 @@ app.use('/api/history',       historyRoutes);
 app.use('/api/profiles',      profileRoutes);
 app.use('/api/auth',          authRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/reports',       reportRoutes);
 
 // Health-check
 app.get('/api/test', (req, res) => {
