@@ -102,6 +102,80 @@ async function buildVolunteerReport({ start, end, userId }) {
   }));
 }
 
+async function buildEventReport({ start, end, eventId }) {
+    const startDate = parseDateOrNull(start);
+    const endDate = parseDateOrNull(end);
+    const filters = [];
+    const params = [];
+    if (eventId) { params.push(eventId); filters.push(`ed.event_id = $${params.length}`); }
+    if (startDate) { params.push(startDate); filters.push(`ed.event_date >= $${params.length}`); }
+    if (endDate) { params.push(endDate); filters.push(`ed.event_date <= $${params.length}`); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const rows = await queryRows(
+        `SELECT 
+           ed.event_id,
+           ed.event_name,
+           ed.event_date,
+           ed.location,
+           COUNT(vh.user_id) FILTER (WHERE vh.status IN ('Assigned','Confirmed','Attended')) AS num_volunteers,
+           AVG(NULLIF(vh.performance_rating,0)) AS avg_rating
+         FROM EventDetails ed
+         LEFT JOIN VolunteerHistory vh ON vh.event_id = ed.event_id
+         ${where}
+         GROUP BY ed.event_id, ed.event_name, ed.event_date, ed.location
+         ORDER BY ed.event_date DESC`,
+        params
+      );
+      return rows.map(r => ({
+        event_id: r.event_id,
+        event_name: r.event_name,
+        event_date: r.event_date,
+        location: r.location,
+        num_volunteers: Number(r.num_volunteers || 0),
+        avg_rating: r.avg_rating ? Number(r.avg_rating).toFixed(2) : null,
+      }));
+}
+
+async function buildAssignmentReport({ start, end, eventId }) {
+    const startDate = parseDateOrNull(start);
+    const endDate = parseDateOrNull(end);
+    const filters = [];
+    const params = [];
+    if (eventId) { params.push(eventId); filters.push(`ed.event_id = $${params.length}`); }
+    if (startDate) { params.push(startDate); filters.push(`ed.event_date >= $${params.length}`); }
+    if (endDate) { params.push(endDate); filters.push(`ed.event_date <= $${params.length}`); }
+    const where = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
+    const rows = await queryRows(
+        `SELECT 
+           vh.user_id AS volunteer_id,
+           up.full_name AS volunteer_name,
+           uc.email,
+           vh.event_id,
+           ed.event_name,
+           ed.event_date,
+           vh.status,
+           vh.performance_rating,
+           vh.feedback
+         FROM VolunteerHistory vh
+         JOIN UserCredentials uc ON uc.user_id = vh.user_id
+         LEFT JOIN UserProfile up ON up.user_id = vh.user_id
+         JOIN EventDetails ed ON ed.event_id = vh.event_id
+         ${where}
+         ORDER BY ed.event_date DESC, volunteer_name ASC NULLS LAST`,
+        params
+      );
+      return rows.map(r => ({
+        event_id: r.event_id,
+        event_name: r.event_name,
+        event_date: r.event_date,
+        volunteer_id: r.volunteer_id,
+        volunteer_name: r.volunteer_name,
+        email: r.email,
+        status: r.status,
+        performance_rating: r.performance_rating,
+        feedback: r.feedback,
+      }));
+}
 
 router.get('/volunteers', async (req, res) => {
   try {
@@ -117,6 +191,33 @@ router.get('/volunteers', async (req, res) => {
   }
 });
 
+router.get('/events', async (req, res) => {
+    try {
+        const { start, end, eventId } = req.query;
+        const format = normalizeFormat(req.query.format);
+        const data = await buildEventReport({ start, end, eventId });
+        if (format === 'csv') return sendCsv(res, data, 'events.csv');
+        if (format === 'pdf') return sendPdf(res, data, 'events.pdf', 'Events Report');
+        return res.json({ data });
+    } catch (err) {
+        console.error('Event report error:', err);
+        res.status(500).json({ error: 'Failed to generate event report' });
+    }
+});
+
+router.get('/assignments', async (req, res) => {
+    try {
+        const { start, end, eventId } = req.query;
+        const format = normalizeFormat(req.query.format);
+        const data = await buildAssignmentReport({ start, end, eventId });
+        if (format === 'csv') return sendCsv(res, data, 'assignments.csv');
+        if (format === 'pdf') return sendPdf(res, data, 'assignments.pdf', 'Assignments Report');
+        return res.json({ data });
+    } catch (err) {
+        console.error('Assignment report error:', err);
+        res.status(500).json({ error: 'Failed to generate assignment report' });
+    }
+});
 
 module.exports = router;
 
