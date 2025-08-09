@@ -2,8 +2,7 @@ const request = require('supertest');
 const express = require('express');
 const eventRoutes = require('../api/eventRoutes');
 
-// Mock the database module
-jest.mock('../../db', () => {
+jest.mock('../api/db', () => {
   const mockClient = {
     query: jest.fn(),
     release: jest.fn()
@@ -14,7 +13,7 @@ jest.mock('../../db', () => {
   };
 });
 
-const db = require('../../db');
+const db = require('../api/db');
 
 // Create a test app
 const app = express();
@@ -109,6 +108,7 @@ describe('Event Routes', () => {
     });
     
     db.connect.mockResolvedValue(mockClient);
+    process.env.NODE_ENV = 'test';
   });
 
   describe('GET /api/events', () => {

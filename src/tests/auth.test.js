@@ -1,13 +1,18 @@
 const { register, verifyEmail, login } = require('../api/authController');
 const db = require('../api/db');
 const bcrypt = require('bcrypt');
+const nodemailer = require('nodemailer');
 
 jest.mock('../api/db');
+jest.mock('nodemailer');
 
 describe('Auth Controller', () => {
   describe('register', () => {
     it('should register a user and send a verification email', async () => {
       db.query.mockResolvedValueOnce({ rows: [{ user_id: 1 }] });
+      // Mock nodemailer transport
+      const sendMailMock = jest.fn().mockResolvedValue({});
+      nodemailer.createTransport.mockReturnValue({ sendMail: sendMailMock });
 
       const req = {
         body: {
@@ -23,9 +28,11 @@ describe('Auth Controller', () => {
       await register(req, res);
 
       expect(db.query).toHaveBeenCalledWith(
-        'INSERT INTO usercredentials (email, password_hash, verification_token) VALUES ($1, $2, $3) RETURNING user_id',
+        'INSERT INTO usercredentials (email, password_hash, verification_token, role) VALUES ($1, $2, $3, $4) RETURNING user_id',
         expect.any(Array)
       );
+      expect(nodemailer.createTransport).toHaveBeenCalled();
+      expect(sendMailMock).toHaveBeenCalled();
       expect(res.status).toHaveBeenCalledWith(201);
       expect(res.json).toHaveBeenCalledWith({
         message: 'User registered. Please check your email to verify your account.',
@@ -134,7 +141,7 @@ describe('Auth Controller', () => {
     it('should log in successfully', async () => {
       const hashedPassword = await bcrypt.hash('password123', 10);
       db.query.mockResolvedValueOnce({
-        rows: [{ email: 'test@example.com', password_hash: hashedPassword, is_verified: true }],
+        rows: [{ user_id: 42, email: 'test@example.com', password_hash: hashedPassword, is_verified: true, role: 'volunteer' }],
       });
 
       const req = { body: { email: 'test@example.com', password: 'password123' } };
@@ -148,13 +155,16 @@ describe('Auth Controller', () => {
       expect(res.status).toHaveBeenCalledWith(200);
       expect(res.json).toHaveBeenCalledWith({
         message: 'Login successful',
-        userId: expect.any(Number),
+        userId: 42,
+        email: 'test@example.com',
+        role: 'volunteer'
       });
     });
 
     it('should return 403 if email is not verified', async () => {
+      const hashedPassword = await bcrypt.hash('password123', 10);
       db.query.mockResolvedValueOnce({
-        rows: [{ email: 'test@example.com', password_hash: 'hashedPassword', is_verified: false }],
+        rows: [{ email: 'test@example.com', password_hash: hashedPassword, is_verified: false }],
       });
 
       const req = { body: { email: 'test@example.com', password: 'password123' } };

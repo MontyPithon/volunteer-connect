@@ -133,7 +133,6 @@ router.get('/:id', async (req, res) => {
 // Create a new event
 router.post('/', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
-      !req.body.city || !req.body.stateCode || !req.body.zipCode ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -205,7 +204,6 @@ router.post('/', async (req, res) => {
 // Update an existing event
 router.put('/:id', async (req, res) => {
   if (!req.body.name || !req.body.description || !req.body.location ||
-      !req.body.city || !req.body.stateCode || !req.body.zipCode ||
       !req.body.requiredSkills || req.body.requiredSkills.length === 0 || 
       !req.body.urgency || !req.body.eventDate) {
       return res.status(400).json({ message: 'Missing required fields' });
@@ -214,7 +212,7 @@ router.put('/:id', async (req, res) => {
   try {
     await client.query('BEGIN');
     await client.query(
-      `UPDATE EventDetails
+       `UPDATE EventDetails
        SET event_name = $1, description = $2, location = $3, address1 = $4, address2 = $5, 
            city = $6, state_code = $7, zip_code = $8, urgency = $9, event_date = $10
        WHERE event_id = $11`,
@@ -224,9 +222,9 @@ router.put('/:id', async (req, res) => {
         req.body.location,
         req.body.address1 || null,
         req.body.address2 || null,
-        req.body.city,
-        req.body.stateCode,
-        req.body.zipCode,
+        req.body.city || null,
+        req.body.stateCode || null,
+        req.body.zipCode || null,
         req.body.urgency,
         req.body.eventDate,
         req.params.id

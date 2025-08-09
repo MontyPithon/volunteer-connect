@@ -64,12 +64,9 @@ function matchVolunteerToEvents(volunteer, events) {
 router.post('/', async (req, res) => {
   const volunteer = req.body;
 
-  if (!volunteer) {
+  if (!volunteer || !Array.isArray(volunteer.availability) || !Array.isArray(volunteer.skills)) {
     return res.status(400).json({ error: 'Invalid volunteer data: missing volunteer object.' });
   }
-
-  volunteer.skills = volunteer.skills || [];
-  volunteer.availability = volunteer.availability || [];
   
   const client = await db.connect();
   try {

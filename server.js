@@ -17,10 +17,12 @@ const reportRoutes      = require('./src/api/reportRoutes');
 const app  = express();
 const PORT = process.env.PORT || 5000;  // picks up env PORT if set
 
-// Test Postgres connection early
-sequelize.authenticate()
-  .then(() => console.log('✅ Connected to Postgres'))
-  .catch(err => console.error('❌ DB conn error:', err));
+// Test Postgres connection early (skip in tests)
+if (process.env.NODE_ENV !== 'test') {
+  sequelize.authenticate()
+    .then(() => console.log('✅ Connected to Postgres'))
+    .catch(err => console.error('❌ DB conn error:', err));
+}
 
 app.use(cors());
 app.use(express.json());
@@ -39,6 +41,11 @@ app.get('/api/test', (req, res) => {
   res.json({ message: 'API is working!' });
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-});
+// Only start server outside of tests
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`Server running on port ${PORT}`);
+  });
+}
+
+module.exports = app;
